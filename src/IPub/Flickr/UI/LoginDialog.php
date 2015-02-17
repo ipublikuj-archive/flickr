@@ -119,7 +119,12 @@ class LoginDialog extends Application\UI\Control
 	 */
 	public function open()
 	{
-		$this->presenter->redirectUrl($this->getUrl());
+		if ($this->client->obtainRequestToken()) {
+			$this->presenter->redirectUrl($this->getUrl());
+
+		} else {
+
+		}
 	}
 
 	/**
@@ -130,14 +135,9 @@ class LoginDialog extends Application\UI\Control
 		// CSRF
 		$this->client->getSession()->establishCSRFTokenState();
 
-		$params = array(
-			'oauth_nonce' => 89601180,
-			'oauth_timestamp' => time(),
-			'oauth_consumer_key' => $this->config->appKey,
-			'oauth_signature_method' => 'HMAC-SHA1',
-			'oauth_version' => '1.0',
-			'oauth_callback' => (string) $this->currentUrl,
-		);
+		$params = [
+			'oauth_token' => $this->session->request_token
+		];
 
 		return $params;
 	}
@@ -147,7 +147,7 @@ class LoginDialog extends Application\UI\Control
 	 */
 	public function getUrl()
 	{
-		return (string) $this->config->createUrl('oauth', 'request_token', $this->getQueryParams());
+		return (string) $this->config->createUrl('oauth', 'authorize', $this->getQueryParams());
 	}
 
 	public function handleResponse()

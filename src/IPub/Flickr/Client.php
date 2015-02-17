@@ -259,13 +259,15 @@ class Client extends Nette\Object
 	/**
 	 * Get a request token from Flickr
 	 *
+	 * @param string $callback
+	 *
 	 * @return bool
 	 */
-	private function obtainRequestToken()
+	public function obtainRequestToken($callback)
 	{
 		$params = $this->getOauthParams();
-		$params['oauth_callback'] = $this->callback;
-		$this->sign(self::REQUEST_TOKEN_ENDPOINT, $params);
+		$params['oauth_callback'] = $callback;
+		$this->sign('POST', self::REQUEST_TOKEN_ENDPOINT, $params);
 		$response = $this->httpRequest(self::REQUEST_TOKEN_ENDPOINT, $params);
 
 		if ((bool) $response['oauth_callback_confirmed']) {
