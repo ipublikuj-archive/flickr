@@ -34,6 +34,7 @@ class FlickrExtension extends DI\CompilerExtension
 	protected $defaults = [
 		'appKey' => NULL,
 		'appSecret' => NULL,
+		'permission' => 'read',          // read/write/delete
 		'clearAllWithLogout' => TRUE,
 		'curlOptions' => array(),
 		'debugger' => '%debugMode%',
@@ -46,6 +47,7 @@ class FlickrExtension extends DI\CompilerExtension
 
 		Utils\Validators::assert($config['appKey'], 'string', 'Application key');
 		Utils\Validators::assert($config['appSecret'], 'string', 'Application secret');
+		Utils\Validators::assert($config['permission'], 'string', 'Application permission');
 
 		$builder->addDefinition($this->prefix('client'))
 			->setClass('IPub\Flickr\Client');
@@ -54,7 +56,8 @@ class FlickrExtension extends DI\CompilerExtension
 			->setClass('IPub\Flickr\Configuration', [
 				$config['appKey'],
 				$config['appSecret'],
-			]);
+			])
+			->addSetup('$permission', array($config['permission']));
 
 		foreach ($config['curlOptions'] as $option => $value) {
 			if (defined($option)) {

@@ -16,6 +16,10 @@ namespace IPub\Flickr;
 
 use Nette;
 use Nette\Http;
+use Nette\Utils;
+
+use Kdyby\Curl;
+use Tracy\Debugger;
 
 class Client extends Nette\Object
 {
@@ -265,16 +269,23 @@ class Client extends Nette\Object
 	 */
 	public function obtainRequestToken($callback)
 	{
+		// Before first handshake, session have to cleared
+		$this->session->clearAll();
+
+		// Complete request params
 		$params = $this->getOauthParams();
 		$params['oauth_callback'] = $callback;
-		$this->sign('POST', self::REQUEST_TOKEN_ENDPOINT, $params);
-		$response = $this->httpRequest(self::REQUEST_TOKEN_ENDPOINT, $params);
+		$params['oauth_signature'] = $this->getSignature('GET', (string)  $this->config->createUrl('oauth', 'request_token'), $params);
 
-		if ((bool) $response['oauth_callback_confirmed']) {
-			$this->session->request_token = $response['oauth_token'];
-			$this->session->request_token_secret = $response['oauth_token_secret'];
+		if ($response = $this->call($this->config->createUrl('oauth', 'request_token', $params))) {
+			parse_str($response, $response);
 
-			return TRUE;
+			if (isset($response['oauth_callback_confirmed']) && Utils\Strings::lower($response['oauth_callback_confirmed']) == 'true') {
+				$this->session->request_token = $response['oauth_token'];
+				$this->session->request_token_secret = $response['oauth_token_secret'];
+
+				return TRUE;
+			}
 		}
 
 		return FALSE;
@@ -289,7 +300,7 @@ class Client extends Nette\Object
 	 *
 	 * @return string
 	 */
-	private function sign($method, $url, $parameters)
+	private function getSignature($method, $url, $parameters)
 	{
 		$baseString = $this->getBaseString($method, $url, $parameters);
 
@@ -306,7 +317,7 @@ class Client extends Nette\Object
 
 		$key = "$keyPart1&$keyPart2";
 
-		return base64_encode(hash_hmac('sha1', $baseString, $key, TRUE));
+		return base64_encode($this->hmac('sha1', $baseString, $key));
 	}
 
 	/**
@@ -319,6 +330,8 @@ class Client extends Nette\Object
 	 */
 	private function getBaseString($method, $url, $parameters)
 	{
+		ksort($parameters, SORT_STRING);
+
 		$components = [
 			rawurlencode($method),
 			rawurlencode($url),
@@ -337,13 +350,13 @@ class Client extends Nette\Object
 	 */
 	private function getOauthParams()
 	{
-		$params = array (
+		$params = [
 			'oauth_nonce' => $this->makeNonce(),
 			'oauth_timestamp' => time(),
-			'oauth_consumer_key' => $this->config->appSecret,
+			'oauth_consumer_key' => $this->config->appKey,
 			'oauth_signature_method' => 'HMAC-SHA1',
 			'oauth_version' => '1.0',
-		);
+		];
 
 		return $params;
 	}
@@ -365,5 +378,57 @@ class Client extends Nette\Object
 		);
 
 		return md5($reasonablyDistinctiveString);
+	}
+
+	/**
+	 * @param string $url
+	 * @param array $parameters
+	 *
+	 * @return string
+	 */
+	private function call($url, array $parameters = [])
+	{
+		$request = new Curl\Request($url);
+
+		try {
+			$response =  $request->get($parameters);
+
+			return $response->getResponse();
+
+		} catch (Curl\CurlException $ex) {
+
+		}
+
+		return FALSE;
+	}
+
+	/**
+	 * @param string $function
+	 * @param string $data
+	 * @param string $key
+	 *
+	 * @return string
+	 */
+	private function hmac($function, $data, $key)
+	{
+		switch($function)
+		{
+			case 'sha1':
+				$pack = 'H40';
+				break;
+
+			default:
+				return '';
+		}
+
+		if (strlen($key) > 64) {
+			$key = pack($pack, $function($key));
+		}
+
+		if (strlen($key) < 64) {
+			$key = str_pad($key, 64, "\0");
+		}
+
+		return (pack($pack, $function((str_repeat("\x5c", 64) ^ $key) . pack($pack, $function((str_repeat("\x36", 64) ^ $key) . $data)))));
 	}
 }

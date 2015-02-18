@@ -30,12 +30,17 @@ class Configuration extends Nette\Object
 	public $appSecret;
 
 	/**
+	 * @var string
+	 */
+	public $permission;
+
+	/**
 	 * @var array
 	 */
-	public $domains = array(
-		'oauth' => 'https://www.flickr.com/services/oauth/',
+	public $domains = [
+		'oauth' => 'http://www.flickr.com/services/oauth/',
 		'api' => 'https://api.flickr.com/services/',
-	);
+	];
 
 	/**
 	 * @param string $appKey

@@ -119,7 +119,7 @@ class LoginDialog extends Application\UI\Control
 	 */
 	public function open()
 	{
-		if ($this->client->obtainRequestToken()) {
+		if ($this->client->obtainRequestToken((string) $this->currentUrl)) {
 			$this->presenter->redirectUrl($this->getUrl());
 
 		} else {
@@ -136,7 +136,8 @@ class LoginDialog extends Application\UI\Control
 		$this->client->getSession()->establishCSRFTokenState();
 
 		$params = [
-			'oauth_token' => $this->session->request_token
+			'oauth_token' => $this->session->request_token,
+			'perms' => $this->config->permission
 		];
 
 		return $params;
