@@ -20,6 +20,7 @@ use Nette\Utils;
 use IPub;
 use IPub\Flickr;
 use IPub\Flickr\Exceptions;
+use Tracy\Debugger;
 
 /**
  * @package		iPublikuj:Flickr!
@@ -179,22 +180,6 @@ class Response extends Nette\Object
 	}
 
 	/**
-	 * @see https://developer.github.com/guides/traversing-with-pagination/#navigating-through-the-pages
-	 *
-	 * @param string $rel
-	 *
-	 * @return array
-	 */
-	public function getPaginationLink($rel = 'next')
-	{
-		if (!isset($this->headers['Link']) || !preg_match('~<(?P<link>[^>]+)>;\s*rel="' . preg_quote($rel) . '"~i', $this->headers['Link'], $m)) {
-			return NULL;
-		}
-
-		return new Nette\Http\UrlScript($m['link']);
-	}
-
-	/**
 	 * @internal
 	 *
 	 * @return array
@@ -202,35 +187,5 @@ class Response extends Nette\Object
 	public function getDebugInfo()
 	{
 		return $this->info;
-	}
-
-	private static function parseErrors(array $response)
-	{
-		$errors = [];
-		foreach ($response['errors'] as $error) {
-			switch ($error['code']) {
-				case 'missing':
-					$errors[] = sprintf('The %s %s does not exist, for resource "%s"', $error['field'], $error['value'], $error['resource']);
-					break;
-
-				case 'missing_field':
-					$errors[] = sprintf('Field "%s" is missing, for resource "%s"', $error['field'], $error['resource']);
-					break;
-
-				case 'invalid':
-					$errors[] = sprintf('Field "%s" is invalid, for resource "%s"', $error['field'], $error['resource']);
-					break;
-
-				case 'already_exists':
-					$errors[] = sprintf('Field "%s" already exists, for resource "%s"', $error['field'], $error['resource']);
-					break;
-
-				default:
-					$errors[] = $error['message'];
-					break;
-			}
-		}
-
-		return implode(', ', $errors);
 	}
 }

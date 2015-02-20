@@ -15,6 +15,7 @@
 namespace IPub\Flickr;
 
 use Nette;
+use Tracy\Debugger;
 
 /**
  * @author Filip Procházka <filip@prochazka.su>
@@ -22,6 +23,11 @@ use Nette;
 class Paginator extends Nette\Object implements \Iterator
 {
 	const PER_PAGE_MAX = 100;
+
+	/**
+	 * @var Client
+	 */
+	private $client;
 
 	/**
 	 * @var Api\CurlClient
@@ -69,6 +75,8 @@ class Paginator extends Nette\Object implements \Iterator
 	 */
 	public function __construct(Client $client, Api\Response $response)
 	{
+		$this->client = $client;
+
 		$this->httpClient = $client->getHttpClient();
 		$resource = $response->toArray();
 
@@ -148,13 +156,21 @@ class Paginator extends Nette\Object implements \Iterator
 			return;
 		}
 
-		if (!$nextPage = $this->responses[$this->pageCursor]->getPaginationLink('next')) {
-			return; // end
-		}
-
 		try {
 			$prevRequest = $this->responses[$this->pageCursor]->getRequest();
-			$response = $this->httpClient->makeRequest($prevRequest->copyWithUrl($nextPage));
+
+			$params = $this->responses[$this->pageCursor]->request->getParameters();
+			$params['page'] = isset($params['page']) ? (int) max($params['page'], 1) + 1 : 1;
+			if (isset($params['oauth_signature'])) {
+				unset($params['oauth_signature']);
+			}
+			$params['oauth_signature'] = $this->client->getSignature(
+				$this->responses[$this->pageCursor]->request->getMethod(), $this->client->getConfig()->createUrl('api', 'rest'), $params
+			);
+
+			$response = $this->httpClient->makeRequest(
+				$prevRequest->copyWithUrl($this->client->getConfig()->createUrl('api', 'rest', $params))
+			);
 
 			$this->itemCursor = 0;
 			$this->pageCursor++;

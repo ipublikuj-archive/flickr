@@ -62,7 +62,7 @@ class Client extends Nette\Object
 	 * The OAuth access token received in exchange for a valid authorization code
 	 * null means the access token has yet to be determined
 	 *
-	 * @var string
+	 * @var array
 	 */
 	protected $accessToken;
 
@@ -123,13 +123,32 @@ class Client extends Nette\Object
 	 * your access token by other means and just want the SDK
 	 * to use it.
 	 *
-	 * @param string $accessToken an access token.
+	 * @param array|string $token an access token.
 	 *
 	 * @return $this
+	 *
+	 * @throws Exceptions\InvalidArgumentException
 	 */
-	public function setAccessToken($accessToken)
+	public function setAccessToken($token)
 	{
-		$this->accessToken = $accessToken;
+		if (!is_array($token)) {
+			try {
+				$token = Utils\Json::decode($token, Utils\Json::FORCE_ARRAY);
+
+			} catch (Utils\JsonException $ex) {
+				throw new Exceptions\InvalidArgumentException($ex->getMessage(), 0, $ex);
+			}
+		}
+
+		if (!isset($token['access_token'])) {
+			throw new Exceptions\InvalidArgumentException("It's required that the token has 'access_token' or 'refresh_token' field.");
+		}
+
+		if (isset($token['access_token_secret'])) {
+			$this->setAccessTokenSecret($token['access_token_secret']);
+		}
+
+		$this->accessToken = $token;
 
 		return $this;
 	}
@@ -141,19 +160,33 @@ class Client extends Nette\Object
 	 * access token if a valid user access token wasn't available.  Subsequent
 	 * calls return whatever the first call returned.
 	 *
-	 * @return string The access token
+	 * @param string $key
+	 *
+	 * @return array|string The access token
 	 */
-	public function getAccessToken()
+	public function getAccessToken($key = NULL)
 	{
-		if ($this->accessToken !== NULL) {
-			return $this->accessToken; // we've done this already and cached it. Just return.
-		}
-
-		if ($accessToken = $this->getUserAccessToken()) {
+		if ($this->accessToken === NULL && ($accessToken = $this->getUserAccessToken())) {
 			$this->setAccessToken($accessToken);
 		}
 
+		if ($key !== NULL) {
+			return array_key_exists($key, $this->accessToken) ? $this->accessToken[$key] : NULL;
+		}
+
 		return $this->accessToken;
+	}
+
+	/**
+	 * @param string $secret
+	 *
+	 * @return $this
+	 */
+	public function setAccessTokenSecret($secret)
+	{
+		$this->session->access_token_secret = $secret;
+
+		return $this;
 	}
 
 	/**
@@ -172,7 +205,10 @@ class Client extends Nette\Object
 				$this->session->verifier = $verifier;
 				$this->session->token = $token;
 
-				return $this->session->access_token;
+				return [
+					'access_token'          => $this->session->access_token,
+					'access_token_secret'   => $this->session->access_token_secret
+				];
 			}
 
 			// verifier was bogus, so everything based on it should be invalidated.
@@ -185,7 +221,10 @@ class Client extends Nette\Object
 		// store, knowing nothing explicit (signed request, authorization
 		// code, etc.) was present to shadow it (or we saw a code in $_REQUEST,
 		// but it's the same as what's in the persistent store)
-		return $this->session->access_token;
+		return [
+			'access_token'          => $this->session->access_token,
+			'access_token_secret'   => $this->session->access_token_secret
+		];
 	}
 
 	/**
@@ -310,7 +349,7 @@ class Client extends Nette\Object
 
 		$params['oauth_token'] = $this->session->access_token;
 
-		$params['oauth_signature'] = $this->getSignature($method, (string)  $this->config->createUrl('api', 'rest'), $params);
+		$params['oauth_signature'] = $this->getSignature($method, $this->config->createUrl('api', 'rest'), $params);
 
 		$response = $this->httpClient->makeRequest(
 			new Api\Request($this->config->createUrl('api', 'rest', $params), $method, $post, $headers)
@@ -361,7 +400,7 @@ class Client extends Nette\Object
 	protected function getUserFromAccessToken()
 	{
 		try {
-			$user = $this->api('flickr.test.login');
+			$user = $this->get('flickr.test.login');
 
 			return $user->offsetExists('user') ? $user->user->id : 0;
 
@@ -410,7 +449,7 @@ class Client extends Nette\Object
 		// Complete request params
 		$params = $this->getOauthParams();
 		$params['oauth_callback'] = $callback;
-		$params['oauth_signature'] = $this->getSignature(Api\Request::GET, (string)  $this->config->createUrl('oauth', 'request_token'), $params);
+		$params['oauth_signature'] = $this->getSignature(Api\Request::GET, $this->config->createUrl('oauth', 'request_token'), $params);
 
 		$response = $this->httpClient->makeRequest(
 			new Api\Request($this->config->createUrl('oauth', 'request_token', $params), Api\Request::GET)
@@ -464,7 +503,7 @@ class Client extends Nette\Object
 		$params = $this->getOauthParams();
 		$params['oauth_token'] =  $token;
 		$params['oauth_verifier'] = $verifier;
-		$params['oauth_signature'] = $this->getSignature(Api\Request::GET, (string)  $this->config->createUrl('oauth', 'access_token'), $params);
+		$params['oauth_signature'] = $this->getSignature(Api\Request::GET, $this->config->createUrl('oauth', 'access_token'), $params);
 
 		$response = $this->httpClient->makeRequest(
 			new Api\Request($this->config->createUrl('oauth', 'access_token', $params), Api\Request::GET)
@@ -500,13 +539,15 @@ class Client extends Nette\Object
 	/**
 	 * Sign an array of parameters with an OAuth signature
 	 *
+	 * @internal
+	 *
 	 * @param string $method
 	 * @param string $url
 	 * @param array $parameters
 	 *
 	 * @return string
 	 */
-	private function getSignature($method, $url, $parameters)
+	public function getSignature($method, $url, $parameters)
 	{
 		$baseString = $this->getBaseString($method, $url, $parameters);
 
@@ -646,6 +687,20 @@ class Client extends Nette\Object
 		}
 
 		return FALSE;
+	}
+
+	/**
+	 * Destroy the current session
+	 *
+	 * @return $this
+	 */
+	public function destroySession()
+	{
+		$this->accessToken = NULL;
+		$this->user = NULL;
+		$this->session->clearAll();
+
+		return $this;
 	}
 
 	/**
