@@ -14,6 +14,9 @@
 
 namespace IPub\Flickr\Exceptions;
 
+use IPub;
+use IPub\Flickr\Api;
+
 class ApiException extends \RuntimeException implements IException
 {
 	/**

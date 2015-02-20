@@ -19,10 +19,23 @@ use Nette\Http;
 use Nette\Utils;
 
 use Kdyby\Curl;
-use Tracy\Debugger;
+
+use IPub;
+use IPub\Flickr;
+use IPub\Flickr\Api;
 
 class Client extends Nette\Object
 {
+	/**
+	 * OAuth version
+	 */
+	const VERSION = '1.0';
+
+	/**
+	 * @var Api\CurlClient
+	 */
+	private $httpClient;
+
 	/**
 	 * @var Configuration
 	 */
@@ -56,15 +69,18 @@ class Client extends Nette\Object
 	/**
 	 * @param Configuration $config
 	 * @param SessionStorage $session
+	 * @param HttpClient $httpClient
 	 * @param Http\IRequest $httpRequest
 	 */
 	public function __construct(
 		Configuration $config,
 		SessionStorage $session,
+		HttpClient $httpClient,
 		Nette\Http\IRequest $httpRequest
 	){
 		$this->config = $config;
 		$this->session = $session;
+		$this->httpClient = $httpClient;
 		$this->httpRequest = $httpRequest;
 	}
 
@@ -90,20 +106,6 @@ class Client extends Nette\Object
 	public function getCurrentUrl()
 	{
 		return clone $this->httpRequest->getUrl();
-	}
-
-	/**
-	 * Get the UID of the connected user, or 0 if the Flickr user is not connected.
-	 *
-	 * @return string the UID if available.
-	 */
-	public function getUser()
-	{
-		if ($this->user === NULL) {
-			$this->user = $this->getUserFromAvailableData();
-		}
-
-		return $this->user;
 	}
 
 	/**
@@ -145,22 +147,210 @@ class Client extends Nette\Object
 	}
 
 	/**
-	 * Get the authorization code from the query parameters, if it exists,
-	 * and otherwise return false to signal no authorization code was
-	 * discoverable.
+	 * Determines and returns the user access token, first using
+	 * the signed request if present, and then falling back on
+	 * the authorization code if present.  The intent is to
+	 * return a valid user access token, or false if one is determined
+	 * to not be available.
 	 *
-	 * @return mixed The authorization code, or false if the authorization code could not be determined.
+	 * @return string A valid user access token, or false if one could not be determined.
 	 */
-	protected function getCode()
+	protected function getUserAccessToken()
 	{
-		$state = $this->getRequest('state');
+		if (($verifier = $this->getVerifier()) && $verifier != $this->session->verifier && ($token = $this->getToken()) && $token != $this->session->token) {
+			if ($this->obtainAccessToken($verifier, $token)) {
+				$this->session->verifier = $verifier;
+				$this->session->token = $token;
 
-		if (($code = $this->getRequest('code')) && $state && $this->session->state === $state) {
-			$this->session->state = NULL; // CSRF state has done its job, so clear it
-			return $code;
+				return $this->session->access_token;
+			}
+
+			// verifier was bogus, so everything based on it should be invalidated.
+			$this->session->clearAll();
+
+			return FALSE;
 		}
 
-		return FALSE;
+		// as a fallback, just return whatever is in the persistent
+		// store, knowing nothing explicit (signed request, authorization
+		// code, etc.) was present to shadow it (or we saw a code in $_REQUEST,
+		// but it's the same as what's in the persistent store)
+		return $this->session->access_token;
+	}
+
+	/**
+	 * @param string $path
+	 * @param array $params
+	 * @param array $headers
+	 *
+	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
+	 *
+	 * @throws Exceptions\ApiException
+	 */
+	public function get($path, array $params = [], array $headers = [])
+	{
+		return $this->api($path, Api\Request::GET, $params, [], $headers);
+	}
+
+	/**
+	 * @param string $path
+	 * @param array $params
+	 * @param array $headers
+	 *
+	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
+	 *
+	 * @throws Exceptions\ApiException
+	 */
+	public function head($path, array $params = [], array $headers = [])
+	{
+		return $this->api($path, Api\Request::HEAD, $params, [], $headers);
+	}
+
+	/**
+	 * @param string $path
+	 * @param array $params
+	 * @param array|string $post
+	 * @param array $headers
+	 *
+	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
+	 *
+	 * @throws Exceptions\ApiException
+	 */
+	public function post($path, array $params = [], $post = [], array $headers = [])
+	{
+		return $this->api($path, Api\Request::POST, $params, $post, $headers);
+	}
+
+	/**
+	 * @param string $path
+	 * @param array $params
+	 * @param array|string $post
+	 * @param array $headers
+	 *
+	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
+	 *
+	 * @throws Exceptions\ApiException
+	 */
+	public function patch($path, array $params = [], $post = [], array $headers = [])
+	{
+		return $this->api($path, Api\Request::PATCH, $params, $post, $headers);
+	}
+
+	/**
+	 * @param string $path
+	 * @param array $params
+	 * @param array|string $post
+	 * @param array $headers
+	 *
+	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
+	 *
+	 * @throws Exceptions\ApiException
+	 */
+	public function put($path, array $params = [], $post = [], array $headers = [])
+	{
+		return $this->api($path, Api\Request::PUT, $params, $post, $headers);
+	}
+
+	/**
+	 * @param string $path
+	 * @param array $params
+	 * @param array $headers
+	 *
+	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
+	 * 
+	 * @throws Exceptions\ApiException
+	 */
+	public function delete($path, array $params = [], array $headers = [])
+	{
+		return $this->api($path, Api\Request::DELETE, $params, [], $headers);
+	}
+
+	/**
+	 * Simply pass anything starting with a slash and it will call the Api, for example
+	 * <code>
+	 * $details = $flickr->api('flick.people.info');
+	 * </code>
+	 *
+	 * @param string $path
+	 * @param string $method The argument is optional
+	 * @param array $params Query parameters
+	 * @param array|string $post Post request parameters or body to send
+	 * @param array $headers Http request headers
+	 *
+	 * @return Utils\ArrayHash|string|Paginator|ArrayHash[]
+	 *
+	 * @throws Exceptions\ApiException
+	 */
+	public function api($path, $method = Api\Request::GET, array $params = [], $post = [], array $headers = [])
+	{
+		if (is_array($method)) {
+			$headers = $post;
+			$post = $params;
+			$params = $method;
+			$method = Api\Request::GET;
+		}
+
+		$params['method'] = $path;
+		$params['format'] = 'json';
+		$params['nojsoncallback'] = 1;
+
+		$params = array_merge($params, $this->getOauthParams());
+
+		$params['oauth_token'] = $this->session->access_token;
+
+		$params['oauth_signature'] = $this->getSignature($method, (string)  $this->config->createUrl('api', 'rest'), $params);
+
+		$response = $this->httpClient->makeRequest(
+			new Api\Request($this->config->createUrl('api', 'rest', $params), $method, $post, $headers)
+		);
+
+		if ($response->isPaginated()) {
+			return new Paginator($this, $response);
+		}
+
+		return $response->isJson() ? Utils\ArrayHash::from($response->toArray()) : $response->getContent();
+	}
+
+	/**
+	 * Get the UID of the connected user, or 0 if the Flickr user is not connected.
+	 *
+	 * @return string the UID if available.
+	 */
+	public function getUser()
+	{
+		if ($this->user === NULL) {
+			$this->user = $this->getUserFromAvailableData();
+		}
+
+		return $this->user;
+	}
+
+	/**
+	 * @param int|string $profileId
+	 *
+	 * @return Profile
+	 */
+	public function getProfile($profileId = NULL)
+	{
+		return new Profile($this, $profileId);
+	}
+
+	/**
+	 * Retrieves the UID with the understanding that $this->accessToken has already been set and is seemingly legitimate
+	 * It relies on Flicker's API to retrieve user information and then extract the user ID.
+	 *
+	 * @return integer Returns the UID of the Flicker user, or 0 if the Flicker user could not be determined
+	 */
+	protected function getUserFromAccessToken()
+	{
+		try {
+			$user = $this->api('flickr.test.login');
+
+			return $user->offsetExists('user') ? $user->user->id : 0;
+
+		} catch (\Exception $e) { }
+
+		return 0;
 	}
 
 	/**
@@ -189,78 +379,6 @@ class Client extends Nette\Object
 	}
 
 	/**
-	 * Retrieves the UID with the understanding that $this->accessToken has already been set and is seemingly legitimate
-	 * It relies on Flicker's API to retrieve user information and then extract the user ID.
-	 *
-	 * @return integer Returns the UID of the Flicker user, or 0 if the Flicker user could not be determined
-	 */
-	protected function getUserFromAccessToken()
-	{
-		try {
-			$user = $this->get('/user');
-
-			return isset($user['id']) ? $user['id'] : 0;
-
-		} catch (\Exception $e) { }
-
-		return 0;
-	}
-
-	/**
-	 * Determines and returns the user access token, first using
-	 * the signed request if present, and then falling back on
-	 * the authorization code if present.  The intent is to
-	 * return a valid user access token, or false if one is determined
-	 * to not be available.
-	 *
-	 * @return string A valid user access token, or false if one could not be determined.
-	 */
-	protected function getUserAccessToken()
-	{
-		if (($code = $this->getCode()) && $code != $this->session->code) {
-			if ($accessToken = $this->getAccessTokenFromCode($code)) {
-				$this->session->code = $code;
-				return $this->session->access_token = $accessToken;
-			}
-
-			// code was bogus, so everything based on it should be invalidated.
-			$this->session->clearAll();
-
-			return FALSE;
-		}
-
-		// as a fallback, just return whatever is in the persistent
-		// store, knowing nothing explicit (signed request, authorization
-		// code, etc.) was present to shadow it (or we saw a code in $_REQUEST,
-		// but it's the same as what's in the persistent store)
-		return $this->session->access_token;
-	}
-
-	/**
-	 * @param string $key
-	 * @param mixed $default
-	 *
-	 * @return mixed|null
-	 */
-	protected function getRequest($key, $default = NULL)
-	{
-		if ($value = $this->httpRequest->getPost($key)) {
-			return $value;
-		}
-
-		if ($value = $this->httpRequest->getQuery($key)) {
-			return $value;
-		}
-
-		return $default;
-	}
-
-
-
-
-
-
-	/**
 	 * Get a request token from Flickr
 	 *
 	 * @param string $callback
@@ -275,20 +393,91 @@ class Client extends Nette\Object
 		// Complete request params
 		$params = $this->getOauthParams();
 		$params['oauth_callback'] = $callback;
-		$params['oauth_signature'] = $this->getSignature('GET', (string)  $this->config->createUrl('oauth', 'request_token'), $params);
+		$params['oauth_signature'] = $this->getSignature(Api\Request::GET, (string)  $this->config->createUrl('oauth', 'request_token'), $params);
 
-		if ($response = $this->call($this->config->createUrl('oauth', 'request_token', $params))) {
-			parse_str($response, $response);
+		$response = $this->httpClient->makeRequest(
+			new Api\Request($this->config->createUrl('oauth', 'request_token', $params), Api\Request::GET)
+		);
 
-			if (isset($response['oauth_callback_confirmed']) && Utils\Strings::lower($response['oauth_callback_confirmed']) == 'true') {
-				$this->session->request_token = $response['oauth_token'];
-				$this->session->request_token_secret = $response['oauth_token_secret'];
+		if ($response->isOk()) {
+			$token = [];
+			parse_str($response->getContent(), $token);
+
+			if (isset($token['oauth_callback_confirmed']) && Utils\Strings::lower($token['oauth_callback_confirmed']) == 'true') {
+				if (isset($token['oauth_token'])) {
+					$this->session->request_token = $token['oauth_token'];
+
+				} else {
+					return FALSE;
+				}
+
+				if (isset($token['oauth_token_secret'])) {
+					$this->session->request_token_secret = $token['oauth_token_secret'];
+
+				} else {
+					return FALSE;
+				}
 
 				return TRUE;
 			}
 		}
 
 		return FALSE;
+	}
+
+	/**
+	 * Retrieves an access token and access token secret for the given authorization verifier and token
+	 * (previously generated from www.flickr.com on behalf of a specific user).
+	 * The authorization verifier and token is sent to www.flickr.com/services/oauth
+	 * and a legitimate access token is generated provided the access token
+	 * and the user for which it was generated all match, and the user is
+	 * either logged in to Flickr or has granted an offline access permission
+	 *
+	 * @param string $verifier
+	 * @param string $token
+	 *
+	 * @return bool
+	 */
+	protected function obtainAccessToken($verifier, $token)
+	{
+		if (empty($verifier) || empty($token)) {
+			return FALSE;
+		}
+
+		$params = $this->getOauthParams();
+		$params['oauth_token'] =  $token;
+		$params['oauth_verifier'] = $verifier;
+		$params['oauth_signature'] = $this->getSignature(Api\Request::GET, (string)  $this->config->createUrl('oauth', 'access_token'), $params);
+
+		$response = $this->httpClient->makeRequest(
+			new Api\Request($this->config->createUrl('oauth', 'access_token', $params), Api\Request::GET)
+		);
+
+		if ($response->isOk()) {
+			$token = [];
+			parse_str($response->getContent(), $token);
+
+			if (isset($token['oauth_token'])) {
+				$this->session->access_token = $token['oauth_token'];
+
+			} else {
+				return FALSE;
+			}
+
+			if (isset($token['oauth_token_secret'])) {
+				$this->session->access_token_secret = $token['oauth_token_secret'];
+
+			} else {
+				return FALSE;
+			}
+
+		} else {
+			// most likely that user very recently revoked authorization.
+			// In any event, we don't have an access token, so say so.
+			return FALSE;
+		}
+
+		return TRUE;
 	}
 
 	/**
@@ -305,7 +494,7 @@ class Client extends Nette\Object
 		$baseString = $this->getBaseString($method, $url, $parameters);
 
 		$keyPart1 = $this->config->appSecret;
-		$keyPart2 = $this->session->access_token;
+		$keyPart2 = $this->session->access_token_secret;
 
 		if (empty($keyPart2)) {
 			$keyPart2 = $this->session->request_token_secret;
@@ -355,7 +544,7 @@ class Client extends Nette\Object
 			'oauth_timestamp' => time(),
 			'oauth_consumer_key' => $this->config->appKey,
 			'oauth_signature_method' => 'HMAC-SHA1',
-			'oauth_version' => '1.0',
+			'oauth_version' => self::VERSION,
 		];
 
 		return $params;
@@ -378,28 +567,6 @@ class Client extends Nette\Object
 		);
 
 		return md5($reasonablyDistinctiveString);
-	}
-
-	/**
-	 * @param string $url
-	 * @param array $parameters
-	 *
-	 * @return string
-	 */
-	private function call($url, array $parameters = [])
-	{
-		$request = new Curl\Request($url);
-
-		try {
-			$response =  $request->get($parameters);
-
-			return $response->getResponse();
-
-		} catch (Curl\CurlException $ex) {
-
-		}
-
-		return FALSE;
 	}
 
 	/**
@@ -430,5 +597,56 @@ class Client extends Nette\Object
 		}
 
 		return (pack($pack, $function((str_repeat("\x5c", 64) ^ $key) . pack($pack, $function((str_repeat("\x36", 64) ^ $key) . $data)))));
+	}
+
+	/**
+	 * Get the authorization verifier from the query parameters, if it exists,
+	 * and otherwise return false to signal no authorization verifier was
+	 * discoverable.
+	 *
+	 * @return mixed The authorization verifier, or false if the authorization verifier could not be determined.
+	 */
+	protected function getVerifier()
+	{
+		if ($verifier = $this->getRequest('oauth_verifier')) {
+			return $verifier;
+		}
+
+		return FALSE;
+	}
+
+	/**
+	 * Get the authorization verifier from the query parameters, if it exists,
+	 * and otherwise return false to signal no authorization verifier was
+	 * discoverable.
+	 *
+	 * @return mixed The authorization verifier, or false if the authorization verifier could not be determined.
+	 */
+	protected function getToken()
+	{
+		if ($token = $this->getRequest('oauth_token')) {
+			return $token;
+		}
+
+		return FALSE;
+	}
+
+	/**
+	 * @param string $key
+	 * @param mixed $default
+	 *
+	 * @return mixed|null
+	 */
+	protected function getRequest($key, $default = NULL)
+	{
+		if ($value = $this->httpRequest->getPost($key)) {
+			return $value;
+		}
+
+		if ($value = $this->httpRequest->getQuery($key)) {
+			return $value;
+		}
+
+		return $default;
 	}
 }

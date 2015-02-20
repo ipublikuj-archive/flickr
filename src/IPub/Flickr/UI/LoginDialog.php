@@ -123,7 +123,7 @@ class LoginDialog extends Application\UI\Control
 			$this->presenter->redirectUrl($this->getUrl());
 
 		} else {
-
+			die('err open');
 		}
 	}
 

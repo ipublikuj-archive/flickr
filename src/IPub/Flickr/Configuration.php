@@ -38,7 +38,7 @@ class Configuration extends Nette\Object
 	 * @var array
 	 */
 	public $domains = [
-		'oauth' => 'http://www.flickr.com/services/oauth/',
+		'oauth' => 'https://www.flickr.com/services/oauth/',
 		'api' => 'https://api.flickr.com/services/',
 	];
 
@@ -61,7 +61,7 @@ class Configuration extends Nette\Object
 	 *
 	 * @return Http\UrlScript The URL for the given parameters
 	 */
-	public function createUrl($name, $path = NULL, $params = array())
+	public function createUrl($name, $path = NULL, $params = [])
 	{
 		if (preg_match('~^https?://([^.]+\\.)?flickr\\.com/~', trim($path))) {
 			$url = new Http\UrlScript($path);
