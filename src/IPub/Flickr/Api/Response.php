@@ -20,7 +20,6 @@ use Nette\Utils;
 use IPub;
 use IPub\Flickr;
 use IPub\Flickr\Exceptions;
-use Tracy\Debugger;
 
 /**
  * @package		iPublikuj:Flickr!

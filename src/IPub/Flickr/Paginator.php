@@ -15,7 +15,6 @@
 namespace IPub\Flickr;
 
 use Nette;
-use Tracy\Debugger;
 
 /**
  * @author Filip Procházka <filip@prochazka.su>
