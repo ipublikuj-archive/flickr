@@ -33,6 +33,8 @@ if (!defined('CURLE_SSL_CACERT_BADFILE')) {
  * @package		iPublikuj:Flickr!
  * @subpackage	Api
  *
+ * @author Filip Procházka <filip@prochazka.su>
+ *
  * @method onRequest(Request $request, $options)
  * @method onError(Exceptions\IException $ex, Response $response)
  * @method onSuccess(Response $response)
@@ -147,7 +149,7 @@ curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		}
 
 		$response = new Response($request, substr($result, $info['header_size']), $info['http_code'], end($info['headers']), $info);
-
+		Debugger::barDump($response);
 		if (!$response->isOk()) {
 			$e = $response->toException();
 			curl_close($ch);

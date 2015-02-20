@@ -1,6 +1,6 @@
 <?php
 /**
- * RequestFailedException.php
+ * ApiException.php
  *
  * @copyright	More in license.md
  * @license		http://www.ipublikuj.eu
@@ -30,7 +30,10 @@ class ApiException extends \RuntimeException implements IException
 	public $response;
 
 	/**
-	 * @return ApiException|static
+	 * @param Api\Request $request
+	 * @param Api\Response $response
+	 *
+	 * @return $this|static
 	 */
 	public function bindResponse(Api\Request $request, Api\Response $response = NULL)
 	{

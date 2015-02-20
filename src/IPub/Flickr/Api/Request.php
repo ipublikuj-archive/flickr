@@ -18,6 +18,12 @@ use Nette;
 use Nette\Http;
 use Nette\Utils;
 
+/**
+ * @package		iPublikuj:Flickr!
+ * @subpackage	Api
+ *
+ * @author Filip Procházka <filip@prochazka.su>
+ */
 class Request extends Nette\Object
 {
 	const GET = 'GET';

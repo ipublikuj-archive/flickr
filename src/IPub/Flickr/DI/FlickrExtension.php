@@ -40,6 +40,12 @@ class FlickrExtension extends DI\CompilerExtension
 		'debugger' => '%debugMode%',
 	];
 
+	public function __construct()
+	{
+		// Apply default curl options from api
+		$this->defaults['curlOptions'] = IPub\Flickr\Api\CurlClient::$defaultCurlOptions;
+	}
+
 	public function loadConfiguration()
 	{
 		$config = $this->getConfig($this->defaults);
@@ -66,12 +72,26 @@ class FlickrExtension extends DI\CompilerExtension
 			}
 		}
 
-		$builder->addDefinition($this->prefix('httpClient'))
-			->setClass('IPub\Flickr\Api\CurlClient');
-			//->addSetup('$service->curlOptions = ?;', [$config['curlOptions']]);
+		$httpClient = $builder->addDefinition($this->prefix('httpClient'))
+			->setClass('IPub\Flickr\Api\CurlClient')
+			->addSetup('$service->curlOptions = ?;', [$config['curlOptions']]);
 
 		$builder->addDefinition($this->prefix('session'))
 			->setClass('IPub\Flickr\SessionStorage');
+
+		if ($config['debugger']) {
+			$builder->addDefinition($this->prefix('panel'))
+				->setClass('IPub\Flickr\Diagnostics\Panel');
+
+			$httpClient->addSetup($this->prefix('@panel') . '::register', array('@self'));
+		}
+
+		if ($config['clearAllWithLogout']) {
+			$builder->getDefinition('user')
+				->addSetup('$sl = ?; ?->onLoggedOut[] = function () use ($sl) { $sl->getService(?)->clearAll(); }', array(
+					'@container', '@self', $this->prefix('session')
+				));
+		}
 	}
 
 	/**

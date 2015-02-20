@@ -109,6 +109,16 @@ class Client extends Nette\Object
 	}
 
 	/**
+	 * @internal
+	 *
+	 * @return Api\CurlClient
+	 */
+	public function getHttpClient()
+	{
+		return $this->httpClient;
+	}
+
+	/**
 	 * Sets the access token for api calls. Use this if you get
 	 * your access token by other means and just want the SDK
 	 * to use it.
@@ -290,9 +300,11 @@ class Client extends Nette\Object
 			$method = Api\Request::GET;
 		}
 
-		$params['method'] = $path;
-		$params['format'] = 'json';
-		$params['nojsoncallback'] = 1;
+		$params = array_merge($params, [
+			'method'            => $path,
+			'format'            => 'json',
+			'nojsoncallback'    => 1,
+		]);
 
 		$params = array_merge($params, $this->getOauthParams());
 
@@ -304,11 +316,16 @@ class Client extends Nette\Object
 			new Api\Request($this->config->createUrl('api', 'rest', $params), $method, $post, $headers)
 		);
 
+		if (!$response->isJson() || (!$data = Utils\ArrayHash::from($response->toArray())) || Utils\Strings::lower($data->stat) != 'ok') {
+			$ex = $response->toException();
+			throw $ex;
+		}
+
 		if ($response->isPaginated()) {
 			return new Paginator($this, $response);
 		}
 
-		return $response->isJson() ? Utils\ArrayHash::from($response->toArray()) : $response->getContent();
+		return Utils\ArrayHash::from($response->toArray());
 	}
 
 	/**

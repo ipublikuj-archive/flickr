@@ -25,6 +25,8 @@ use IPub\Flickr\Exceptions;
  * @package		iPublikuj:Flickr!
  * @subpackage	Api
  *
+ * @author Filip Procházka <filip@prochazka.su>
+ *
  * @property-read Request $request
  * @property-read string $content
  * @property-read int $httpCode
@@ -159,12 +161,8 @@ class Response extends Nette\Object
 	 */
 	public function toException()
 	{
-		if ($this->httpCode < 300 && $this->content !== FALSE) {
-			return NULL;
-		}
-
 		$error = isset($this->info['error']) ? $this->info['error'] : NULL;
-		$e = new Exceptions\RequestFailedException(
+		$ex = new Exceptions\RequestFailedException(
 			$error ? $error['message'] : '',
 			$error ? (int) $error['code'] : 0
 		);
@@ -172,21 +170,12 @@ class Response extends Nette\Object
 		if ($this->content && $this->isJson()) {
 			$response = $this->toArray();
 
-			if ($this->httpCode === 400) {
-				$e = new Exceptions\BadRequestException(isset($response['message']) ? $response['message'] : $this->content, $this->httpCode, $e);
-
-			} else if ($this->httpCode === 422 && isset($response['errors'])) {
-				$e = new Exceptions\ValidationFailedException('Validation Failed: ' . self::parseErrors($response), $this->httpCode, $e);
-
-			} else if ($this->httpCode === 404 && isset($response['message'])) {
-				$e = new Exceptions\UnknownResourceException($response['message'] . ': ' . $this->request->getUrl(), $this->httpCode, $e);
-
-			} else if (isset($response['message'])) {
-				$e = new Exceptions\ApiException($response['message'], $this->httpCode, $e);
+			if (isset($response['message'])) {
+				$ex = new Exceptions\ApiException($response['message'], $response['code'], $ex);
 			}
 		}
 
-		return $e->bindResponse($this->request, $this);
+		return $ex->bindResponse($this->request, $this);
 	}
 
 	/**
