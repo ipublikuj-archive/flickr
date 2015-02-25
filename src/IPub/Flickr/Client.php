@@ -1,6 +1,6 @@
 <?php
 /**
- * Configuration.php
+ * Client.php
  *
  * @copyright	More in license.md
  * @license		http://www.ipublikuj.eu
@@ -368,6 +368,86 @@ class Client extends Nette\Object
 	}
 
 	/**
+	 * Upload photo to the Flickr
+	 *
+	 * @param string $photo
+	 * @param array $params
+	 *
+	 * @return int
+	 *
+	 * @throws Exceptions\ApiException|static
+	 * @throws Exceptions\InvalidArgumentException
+	 */
+	public function uploadPhoto($photo, array $params = [])
+	{
+		return $this->processImage('upload', $photo, $params);
+	}
+
+	/**
+	 * Replace photo in Flickr
+	 *
+	 * @param string $photo
+	 * @param int $photoId
+	 * @param bool $async
+	 *
+	 * @return int
+	 *
+	 * @throws Exceptions\ApiException|static
+	 * @throws Exceptions\InvalidArgumentException
+	 */
+	public function replacePhoto($photo, $photoId, $async = FALSE)
+	{
+		// Complete request params
+		$params = [
+			'photo_id' => $photoId,
+			'async' => $async ? 1 : 0
+		];
+
+		return $this->processImage('replace', $photo, $params);
+	}
+
+	/**
+	 * @param string $method
+	 * @param string $photo Path to image
+	 * @param array $params
+	 *
+	 * @return string
+	 *
+	 * @throws Exceptions\ApiException|static
+	 * @throws Exceptions\InvalidArgumentException
+	 */
+	private function processImage($method, $photo, array $params = [])
+	{
+		if (!file_exists($photo)) {
+			throw new Flickr\Exceptions\InvalidArgumentException("File '$photo' does not exists. Please provide valid path to file.");
+		}
+
+		// Complete request params
+		$params = array_merge($params, $this->getOauthParams());
+		$params['oauth_token'] = $this->session->access_token;
+
+		$params['oauth_signature'] = $this->getSignature(Api\Request::POST, $this->config->createUrl('upload', $method), $params);
+
+		// Add file to post params
+		$params['photo'] = new \CURLFile($photo);
+
+		$response = $this->httpClient->makeRequest(
+			new Api\Request($this->config->createUrl('upload', $method), Api\Request::POST, $params)
+		);
+
+		// Parse REST xml response
+		$xmlContent = simplexml_load_string($response->getContent());
+
+		if ($response->isOk() && Utils\Strings::lower((string) $xmlContent['stat']) == 'ok' && $photoId = (string) $xmlContent->photoid[0]) {
+			return $photoId;
+
+		} else {
+			$ex = $response->toException();
+			throw $ex;
+		}
+	}
+
+	/**
 	 * Get the UID of the connected user, or 0 if the Flickr user is not connected.
 	 *
 	 * @return string the UID if available.
@@ -717,6 +797,25 @@ class Client extends Nette\Object
 
 		if ($value = $this->httpRequest->getQuery($key)) {
 			return $value;
+		}
+
+		return $default;
+	}
+
+	/**
+	 * Helper method to get an element from matched.
+	 *
+	 * @param string $regex
+	 * @param string $text
+	 * @param integer $number
+	 * @param mixed $default
+	 *
+	 * @return mixed
+	 */
+	protected function getMatch($regex, $text, $number = 1, $default = null)
+	{
+		if (preg_match($regex, $text, $match) && isset($match[$number])) {
+			return $match[$number];
 		}
 
 		return $default;

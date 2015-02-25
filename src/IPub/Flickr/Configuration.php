@@ -40,6 +40,7 @@ class Configuration extends Nette\Object
 	public $domains = [
 		'oauth' => 'https://www.flickr.com/services/oauth/',
 		'api' => 'https://api.flickr.com/services/',
+		'upload' => 'https://up.flickr.com/services/',
 	];
 
 	/**
