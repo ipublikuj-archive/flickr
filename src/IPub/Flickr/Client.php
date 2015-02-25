@@ -801,23 +801,4 @@ class Client extends Nette\Object
 
 		return $default;
 	}
-
-	/**
-	 * Helper method to get an element from matched.
-	 *
-	 * @param string $regex
-	 * @param string $text
-	 * @param integer $number
-	 * @param mixed $default
-	 *
-	 * @return mixed
-	 */
-	protected function getMatch($regex, $text, $number = 1, $default = null)
-	{
-		if (preg_match($regex, $text, $match) && isset($match[$number])) {
-			return $match[$number];
-		}
-
-		return $default;
-	}
 }
