@@ -17,8 +17,6 @@ namespace IPub\Flickr;
 use Nette;
 use Nette\Http;
 
-
-
 /**
  * Stores accessToken and other critical data that should be shared across requests
  *

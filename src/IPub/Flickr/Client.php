@@ -62,20 +62,20 @@ class Client extends Nette\Object
 	 * The OAuth access token received in exchange for a valid authorization code
 	 * null means the access token has yet to be determined
 	 *
-	 * @var array
+	 * @var array|null
 	 */
 	protected $accessToken;
 
 	/**
 	 * @param Configuration $config
 	 * @param SessionStorage $session
-	 * @param HttpClient $httpClient
+	 * @param Api\CurlClient $httpClient
 	 * @param Http\IRequest $httpRequest
 	 */
 	public function __construct(
 		Configuration $config,
 		SessionStorage $session,
-		HttpClient $httpClient,
+		Api\CurlClient $httpClient,
 		Nette\Http\IRequest $httpRequest
 	){
 		$this->config = $config;

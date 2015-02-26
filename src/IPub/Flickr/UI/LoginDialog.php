@@ -14,12 +14,14 @@
 
 namespace IPub\Flickr\UI;
 
+use Kdyby\Github\ApiException;
 use Nette;
 use Nette\Application;
 use Nette\Http;
 
 use IPub;
 use IPub\Flickr;
+use IPub\Flickr\Exceptions;
 
 /**
  * Component that you can connect to presenter
@@ -116,6 +118,7 @@ class LoginDialog extends Application\UI\Control
 
 	/**
 	 * @throws Nette\Application\AbortException
+	 * @throws Exceptions\RequestFailedException
 	 */
 	public function open()
 	{
@@ -123,7 +126,7 @@ class LoginDialog extends Application\UI\Control
 			$this->presenter->redirectUrl($this->getUrl());
 
 		} else {
-			die('err open');
+			throw new Exceptions\RequestFailedException('User could not be authenticated.');
 		}
 	}
 
