@@ -632,7 +632,7 @@ class Client extends Nette\Object
 		$baseString = $this->getBaseString($method, $url, $parameters);
 
 		$keyPart1 = $this->config->appSecret;
-		$keyPart2 = $this->getAccessToken('access_token_secret');
+		$keyPart2 = $this->session->access_token_secret;
 
 		if (empty($keyPart2)) {
 			$keyPart2 = $this->session->request_token_secret;

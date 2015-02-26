@@ -126,7 +126,7 @@ class LoginDialog extends Application\UI\Control
 			$this->presenter->redirectUrl($this->getUrl());
 
 		} else {
-			throw new Exceptions\RequestFailedException('User could not be authenticated.');
+			throw new Exceptions\RequestFailedException('User could not be authenticated.', 'flickr');
 		}
 	}
 
