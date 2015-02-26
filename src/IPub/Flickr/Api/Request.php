@@ -63,7 +63,7 @@ class Request extends Nette\Object
 			$this->post = $post;
 
 		} else if ($post) {
-			$this->post = array_map(function ($value) {
+			$this->post = array_map(function($value) {
 				if ($value instanceof Http\UrlScript) {
 					return (string) $value;
 
@@ -214,7 +214,7 @@ class Request extends Nette\Object
 	}
 
 	/**
-	 * @param $url
+	 * @param Http\UrlScript $url
 	 *
 	 * @return Request
 	 */

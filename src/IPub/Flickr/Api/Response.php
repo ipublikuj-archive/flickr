@@ -65,6 +65,13 @@ class Response extends Nette\Object
 	 */
 	private $info;
 
+	/**
+	 * @param Request $request
+	 * @param string $content
+	 * @param string $httpCode
+	 * @param array $headers
+	 * @param array $info
+	 */
 	public function __construct(Request $request, $content, $httpCode, $headers = [], $info = [])
 	{
 		$this->request = $request;
