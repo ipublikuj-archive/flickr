@@ -34,7 +34,7 @@ extensions:
 
 ## Documentation
 
-Learn more in the [documentation](https://github.com/iPublikuj/flickr/blob/master/docs/en/index.md).
+Learn how to authenticate the user using Flickr's oauth or call Flickr's api in [documentation](https://github.com/iPublikuj/flickr/blob/master/docs/en/index.md).
 
 ***
 Homepage [http://www.ipublikuj.eu](http://www.ipublikuj.eu) and repository [http://github.com/iPublikuj/flickr](http://github.com/iPublikuj/flickr).
