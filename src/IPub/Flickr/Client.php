@@ -349,7 +349,7 @@ class Client extends Nette\Object
 
 		$params['oauth_token'] = $this->session->access_token;
 
-		$params['oauth_signature'] = $this->getSignature($method, $this->config->createUrl('api', 'rest'), $params);
+		$params['oauth_signature'] = $this->getSignature($method, $this->config->createUrl('api', 'rest'), array_merge($params, $post));
 
 		$response = $this->httpClient->makeRequest(
 			new Api\Request($this->config->createUrl('api', 'rest', $params), $method, $post, $headers)
@@ -662,12 +662,30 @@ class Client extends Nette\Object
 		$components = [
 			rawurlencode($method),
 			rawurlencode($url),
-			rawurlencode(http_build_query($parameters))
+			rawurlencode($this->joinParameters($parameters))
 		];
 
 		$baseString = implode('&', $components);
 
 		return $baseString;
+	}
+
+	/**
+	 * Join an array of parameters together into a URL-encoded string
+	 *
+	 * @param array $parameters
+	 *
+	 * @return string
+	 */
+	private function joinParameters($parameters)
+	{
+		$keyValuePairs = [];
+
+		foreach ($parameters as $key=>$value)  {
+			array_push($keyValuePairs, rawurlencode($key) . "=" . rawurlencode($value));
+		}
+
+		return implode('&', $keyValuePairs);
 	}
 
 	/**
