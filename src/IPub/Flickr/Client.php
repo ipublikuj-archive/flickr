@@ -347,7 +347,7 @@ class Client extends Nette\Object
 
 		$params = array_merge($params, $this->getOauthParams());
 
-		$params['oauth_token'] = $this->session->access_token;
+		$params['oauth_token'] = $this->getAccessToken('access_token');
 
 		$params['oauth_signature'] = $this->getSignature($method, $this->config->createUrl('api', 'rest'), array_merge($params, $post));
 
@@ -424,7 +424,7 @@ class Client extends Nette\Object
 
 		// Complete request params
 		$params = array_merge($params, $this->getOauthParams());
-		$params['oauth_token'] = $this->session->access_token;
+		$params['oauth_token'] = $this->getAccessToken('access_token');
 
 		$params['oauth_signature'] = $this->getSignature(Api\Request::POST, $this->config->createUrl('upload', $method), $params);
 
@@ -632,7 +632,7 @@ class Client extends Nette\Object
 		$baseString = $this->getBaseString($method, $url, $parameters);
 
 		$keyPart1 = $this->config->appSecret;
-		$keyPart2 = $this->session->access_token_secret;
+		$keyPart2 = $this->getAccessToken('access_token_secret');
 
 		if (empty($keyPart2)) {
 			$keyPart2 = $this->session->request_token_secret;
