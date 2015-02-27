@@ -34,18 +34,18 @@ class ClientTest extends TestCase
 
 		Assert::same(0, $client->getUser());
 	}
-/*
+
 	public function testAuthorized_savedInSession()
 	{
 		$client = $this->buildClient();
 
 		$this->session->access_token = 'abcedf';
 		$this->session->access_token_secret = 'ghijklmn';
-		$this->session->user_id = 123321;
+		$this->session->set('user_id', 123321);
 
 		Assert::same(123321, $client->getUser());
 	}
-
+/*
 	public function testAuthorized_readUserIdFromAccessToken()
 	{
 		$client = $this->buildClient();
