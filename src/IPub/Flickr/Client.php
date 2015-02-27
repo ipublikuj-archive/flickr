@@ -502,7 +502,7 @@ class Client extends Nette\Object
 
 		// use access_token to fetch user id if we have a user access_token, or if
 		// the cached access token has changed
-		if (($accessToken = $this->getAccessToken()) && !($user && $this->session->access_token === $accessToken)) {
+		if (($accessToken = $this->getAccessToken('access_token')) && !($user && $this->session->access_token === $accessToken)) {
 			if (!$user = $this->getUserFromAccessToken()) {
 				$this->session->clearAll();
 
