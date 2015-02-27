@@ -1,6 +1,6 @@
 <?php
 /**
- * Test: IPub\Flickr\ConfigurationTest
+ * Test: IPub\Flickr\Client
  * @testCase
  *
  * @copyright	More in license.md
@@ -37,29 +37,35 @@ class ClientTest extends TestCase
 	public function testAuthorized_savedInSession()
 	{
 		$client = $this->buildClient();
-		$this->session->access_token = 'abcedf';
-		$this->session->user_id = 158625;
 
-		Assert::same(158625, $client->getUser());
+		$this->session->access_token = 'abcedf';
+		$this->session->access_token_secret = 'ghijklmn';
+		$this->session->user_id = 123321;
+
+		Assert::same(123321, $client->getUser());
 	}
 
 	public function testAuthorized_readUserIdFromAccessToken()
 	{
 		$client = $this->buildClient();
-		$client->setAccessToken('abcedf');
 
-		$this->httpClient->fakeResponse('{"login":"fprochazka","id":158625,"type":"User","site_admin":false,"name":"Filip Procházka","email":"filip@prochazka.su"}', 200, array('Content-Type' => 'application/json; charset=utf-8'));
+		$client->setAccessToken([
+			'access_token'          => 'abcedf',
+			'access_token_secret'   => 'ghijklmn',
+		]);
 
-		Assert::same(158625, $client->getUser());
+		$this->httpClient->fakeResponse('{"stat":"ok","user":{"id":123321,"name":"Adam Kadlec"}}', 200, ['Content-Type' => 'application/json; charset=utf-8']);
+
+		Assert::same(123321, $client->getUser());
 		Assert::count(1, $this->httpClient->requests);
 
 		$secondRequest = $this->httpClient->requests[0];
 
 		Assert::same('GET', $secondRequest->getMethod());
-		Assert::match('https://api.github.com/user', (string) $secondRequest->getUrl());
-		Assert::same(array('Authorization' => 'token abcedf', 'Accept' => 'application/vnd.github.v3+json'), $secondRequest->getHeaders());
+		Assert::match('https://api.flickr.com/services/', (string) $secondRequest->getUrl());
+		Assert::same(['Authorization' => 'token abcedf', 'Accept' => 'application/json'], $secondRequest->getHeaders());
 	}
-
+/*
 	public function testAuthorized_authorizeFromCodeAndState()
 	{
 		$client = $this->buildClient(array('state' => 'abcdef123456', 'code' => '654321fedcba'));
@@ -84,6 +90,7 @@ class ClientTest extends TestCase
 		Assert::match('https://api.github.com/user', (string) $secondRequest->getUrl());
 		Assert::same(array('Authorization' => 'token 6dc29d696930cb9b76914bd9d25c63c698957c60', 'Accept' => 'application/vnd.github.v3+json'), $secondRequest->getHeaders());
 	}
+*/
 }
 
 \run(new ClientTest());

@@ -16,6 +16,7 @@
 namespace IPubTests\Flickr;
 
 use Nette;
+use Nette\Http;
 
 use Tester;
 
@@ -48,9 +49,9 @@ class TestCase extends Tester\TestCase
 		// Please do not abuse this
 		$this->config = new IPub\Flickr\Configuration('123', 'abc');
 
-		$httpRequest = new Nette\Http\Request(new Nette\Http\UrlScript('http://www.ipublikuj.eu' . ($query ? '?' . http_build_query($query) : '')), $query, []);
+		$httpRequest = new Http\Request(new Http\UrlScript('http://www.ipublikuj.eu' . ($query ? '?' . http_build_query($query) : '')), $query, []);
 
-		$session = new Nette\Http\Session($httpRequest, new Nette\Http\Response());
+		$session = new Http\Session($httpRequest, new Http\Response());
 		$session->setStorage(new ArraySessionStorage($session));
 		$this->session = new IPub\Flickr\SessionStorage($session, $this->config);
 
@@ -99,14 +100,14 @@ class ApiClientMock extends Nette\Object implements IPub\Flickr\HttpClient
 	}
 }
 
-class ArraySessionStorage extends Nette\Object implements Nette\Http\ISessionStorage
+class ArraySessionStorage extends Nette\Object implements Http\ISessionStorage
 {
 	/**
 	 * @var array
 	 */
 	private $session;
 
-	public function __construct(Nette\Http\Session $session = NULL)
+	public function __construct(Http\Session $session = NULL)
 	{
 		if ($session->isStarted()) {
 			$session->destroy();

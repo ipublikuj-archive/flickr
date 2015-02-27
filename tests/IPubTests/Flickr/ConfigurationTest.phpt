@@ -1,6 +1,6 @@
 <?php
 /**
- * Test: IPub\Flickr\ConfigurationTest
+ * Test: IPub\Flickr\Configuration
  * @testCase
  *
  * @copyright	More in license.md
