@@ -109,7 +109,7 @@ class CurlClient extends Nette\Object implements Flickr\HttpClient
 		}
 
 		$ch = $this->buildCurlResource($request);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
 		$result = curl_exec($ch);
 		// provide certificate if needed
 		if (curl_errno($ch) == CURLE_SSL_CACERT || curl_errno($ch) === CURLE_SSL_CACERT_BADFILE) {
