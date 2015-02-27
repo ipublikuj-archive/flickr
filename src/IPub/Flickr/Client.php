@@ -32,7 +32,7 @@ class Client extends Nette\Object
 	const VERSION = '1.0';
 
 	/**
-	 * @var Api\CurlClient
+	 * @var HttpClient
 	 */
 	private $httpClient;
 
@@ -69,13 +69,13 @@ class Client extends Nette\Object
 	/**
 	 * @param Configuration $config
 	 * @param SessionStorage $session
-	 * @param Api\CurlClient $httpClient
+	 * @param HttpClient $httpClient
 	 * @param Http\IRequest $httpRequest
 	 */
 	public function __construct(
 		Configuration $config,
 		SessionStorage $session,
-		Api\CurlClient $httpClient,
+		HttpClient $httpClient,
 		Nette\Http\IRequest $httpRequest
 	){
 		$this->config = $config;

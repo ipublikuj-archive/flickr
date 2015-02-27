@@ -49,7 +49,10 @@ class TestCase extends Tester\TestCase
 		// Please do not abuse this
 		$this->config = new IPub\Flickr\Configuration('123', 'abc');
 
-		$httpRequest = new Http\Request(new Http\UrlScript('http://www.ipublikuj.eu' . ($query ? '?' . http_build_query($query) : '')), $query, []);
+		$url = new Http\UrlScript('http://www.ipublikuj.eu');
+		$url->setQuery($query);
+
+		$httpRequest = new Http\Request($url);
 
 		$session = new Http\Session($httpRequest, new Http\Response());
 		$session->setStorage(new ArraySessionStorage($session));
@@ -57,7 +60,7 @@ class TestCase extends Tester\TestCase
 
 		$this->httpClient = new ApiClientMock();
 
-		return new IPub\Flickr\Client($this->config, $httpRequest, $this->session, $this->httpClient);
+		return new IPub\Flickr\Client($this->config, $this->session, $this->httpClient, $httpRequest);
 	}
 }
 

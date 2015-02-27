@@ -22,6 +22,7 @@ use Tester\Assert;
 
 use IPub;
 use IPub\Flickr;
+use Tracy\Debugger;
 
 require_once __DIR__ . '/TestCase.php';
 
@@ -33,7 +34,7 @@ class ClientTest extends TestCase
 
 		Assert::same(0, $client->getUser());
 	}
-
+/*
 	public function testAuthorized_savedInSession()
 	{
 		$client = $this->buildClient();
@@ -65,7 +66,7 @@ class ClientTest extends TestCase
 		Assert::match('https://api.flickr.com/services/', (string) $secondRequest->getUrl());
 		Assert::same(['Authorization' => 'token abcedf', 'Accept' => 'application/json'], $secondRequest->getHeaders());
 	}
-/*
+
 	public function testAuthorized_authorizeFromCodeAndState()
 	{
 		$client = $this->buildClient(array('state' => 'abcdef123456', 'code' => '654321fedcba'));
