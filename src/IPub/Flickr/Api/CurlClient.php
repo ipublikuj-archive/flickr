@@ -135,14 +135,7 @@ class CurlClient extends Nette\Object implements Flickr\HttpClient
 			}
 		}
 
-		$info = curl_getinfo($ch);
-		$info['http_code'] = (int) $info['http_code'];
-		if (isset($info['request_header'])) {
-			list($info['request_header']) = self::parseHeaders($info['request_header']);
-		}
-		$info['method'] = $request->getMethod() ? $request->getMethod() : 'GET';
-		$info['headers'] = self::parseHeaders(substr($result, 0, $info['header_size']));
-		$info['error'] = $result === FALSE ? ['message' => curl_error($ch), 'code' => curl_errno($ch)] : [];
+		$info = $this->getRequestInfo($ch, $request, $result);
 
 		if (isset($info['request_header'])) {
 			$request->setHeaders($info['request_header']);
@@ -223,5 +216,26 @@ class CurlClient extends Nette\Object implements Flickr\HttpClient
 		}
 
 		return $headers;
+	}
+
+	/**
+	 * @param $ch
+	 * @param Request $request
+	 * @param $result
+	 *
+	 * @return array
+	 */
+	private function getRequestInfo($ch, Request $request, $result)
+	{
+		$info = curl_getinfo($ch);
+		$info['http_code'] = (int) $info['http_code'];
+		if (isset($info['request_header'])) {
+			list($info['request_header']) = self::parseHeaders($info['request_header']);
+		}
+		$info['method'] = $request->getMethod() ? $request->getMethod() : 'GET';
+		$info['headers'] = self::parseHeaders(substr($result, 0, $info['header_size']));
+		$info['error'] = $result === FALSE ? ['message' => curl_error($ch), 'code' => curl_errno($ch)] : [];
+
+		return $info;
 	}
 }
