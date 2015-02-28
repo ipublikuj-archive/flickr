@@ -78,19 +78,21 @@ class Profile extends Nette\Object
 			try {
 
 				if ($this->profileId !== NULL) {
-					if (($user = $this->flickr->api('flickr.people.findByUsername', Api\Request::GET, ['username' => $this->profileId]))
-						&& ($result = $this->details = $this->flickr->api('flickr.people.getInfo', Api\Request::GET, ['user_id' => $user->user->id]))
+					if (($user = $this->flickr->get('flickr.people.findByUsername', ['username' => $this->profileId]))
+						&& ($user instanceof Utils\ArrayHash)
+						&& ($result = $this->flickr->get('flickr.people.getInfo', ['user_id' => $user->user->id]))
+						&& ($result instanceof Utils\ArrayHash)
 					) {
 						$this->details = $result->person;
 					}
 
 				} else if ($user = $this->flickr->getUser()) {
-					if ($result = $this->flickr->api('flickr.people.getInfo', Api\Request::GET, ['user_id' => $user])) {
+					if (($result = $this->flickr->get('flickr.people.getInfo', ['user_id' => $user])) && ($result instanceof Utils\ArrayHash)) {
 						$this->details = $result->person;
 					}
 
 				} else {
-					$this->details = [];
+					$this->details = new Utils\ArrayHash;
 				}
 
 			} catch (\Exception $e) {

@@ -69,7 +69,8 @@ class Configuration extends Nette\Object
 
 		} else {
 			$url = new Http\UrlScript($this->domains[$name]);
-			$url->path .= ltrim($path, '/');
+			$path = $url->getPath() . ltrim($path, '/');
+			$url->setPath($path);
 		}
 
 		$url->appendQuery(array_map(function ($param) {

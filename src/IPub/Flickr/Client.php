@@ -482,9 +482,15 @@ class Client extends Nette\Object
 		try {
 			$user = $this->get('flickr.test.login');
 
-			return $user->offsetExists('user') ? $user->user->id : 0;
+			if ($user instanceof Utils\ArrayHash && $user->offsetExists('user')) {
+				return $user->user->id;
+			}
 
-		} catch (\Exception $e) { }
+		// User could not be checked through API calls
+		} catch (\Exception $e) {
+			// Is not necessary to throw exception
+			// when call fails. This fail was already logged.
+		}
 
 		return 0;
 	}

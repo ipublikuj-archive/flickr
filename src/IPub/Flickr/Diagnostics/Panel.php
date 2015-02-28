@@ -128,18 +128,7 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 	 */
 	public function success(Api\Response $response)
 	{
-		if (!isset($this->calls[$oid = spl_object_hash($response->getRequest())])) {
-			return;
-		}
-
-		$debugInfo = $response->debugInfo;
-
-		$current = $this->calls[$oid];
-		$this->totalTime += $current->time = $debugInfo['total_time'];
-		unset($debugInfo['total_time']);
-		$current->info = $debugInfo;
-		$current->info['method'] = $response->getRequest()->getMethod();
-		$current->result = $response->toArray() ?: $response->getContent();
+		$this->processEvent($response);
 	}
 
 	/**
@@ -147,6 +136,15 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 	 * @param Api\Response $response
 	 */
 	public function failure(\Exception $exception, Api\Response $response)
+	{
+		$this->processEvent($response, $exception);
+	}
+
+	/**
+	 * @param Api\Response $response
+	 * @param \Exception $exception
+	 */
+	private function processEvent(Api\Response $response, \Exception $exception = NULL)
 	{
 		if (!isset($this->calls[$oid = spl_object_hash($response->getRequest())])) {
 			return;
@@ -159,7 +157,9 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 		unset($debugInfo['total_time']);
 		$current->info = $debugInfo;
 		$current->info['method'] = $response->getRequest()->getMethod();
-		$current->exception = $exception;
+		if ($exception) {
+			$current->exception = $exception;
+		}
 	}
 
 	/**

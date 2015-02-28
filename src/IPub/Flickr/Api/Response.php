@@ -113,7 +113,7 @@ class Response extends Nette\Object
 	 */
 	public function toArray()
 	{
-		if ($this->arrayContent !== NULL) {
+		if (is_array($this->arrayContent)) {
 			return $this->arrayContent;
 		}
 
