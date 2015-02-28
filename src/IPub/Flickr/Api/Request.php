@@ -62,7 +62,7 @@ class Request extends Nette\Object
 		if (!is_array($post)) {
 			$this->post = $post;
 
-		} else if ($post) {
+		} else if (is_array($post) && !empty($post)) {
 			$this->post = array_map(function($value) {
 				if ($value instanceof Http\UrlScript) {
 					return (string) $value;

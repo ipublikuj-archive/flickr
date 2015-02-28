@@ -63,7 +63,7 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 	/**
 	 * @var array
 	 */
-	private $calls = array();
+	private $calls = [];
 
 	/**
 	 * @return string
@@ -74,7 +74,7 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 			->src('data:image/png;base64,' . base64_encode(file_get_contents(__DIR__ . '/Flickr-Mark-32px.png')));
 		$tab = Html::el('span')->title('Flickr')->add($img);
 		$title = Html::el()->setText('Flickr');
-		if ($this->calls) {
+		if (!empty($this->calls)) {
 			$title->setText(
 				count($this->calls) . ' call' . (count($this->calls) > 1 ? 's' : '') .
 				' / ' . sprintf('%0.2f', $this->totalTime) . ' s'
@@ -88,7 +88,7 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 	 */
 	public function getPanel()
 	{
-		if (!$this->calls) {
+		if (empty($this->calls)) {
 			return NULL;
 		}
 

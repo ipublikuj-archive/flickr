@@ -123,7 +123,7 @@ class CurlClient extends Nette\Object implements Flickr\HttpClient
 		// have IPv6 enabled but not have IPv6 connectivity.  If this is
 		// the case, curl will try IPv4 first and if that fails, then it will
 		// fall back to IPv6 and the error EHOSTUNREACH is returned by the operating system.
-		if ($result === FALSE && empty($opts[CURLOPT_IPRESOLVE])) {
+		if ($result === FALSE && (!isset($this->curlOptions[CURLOPT_IPRESOLVE]) || empty($this->curlOptions[CURLOPT_IPRESOLVE]))) {
 			$matches = [];
 			if (preg_match('/Failed to connect to ([^:].*): Network is unreachable/', curl_error($ch), $matches)) {
 				if (strlen(@inet_pton($matches[1])) === 16) {
@@ -140,7 +140,7 @@ class CurlClient extends Nette\Object implements Flickr\HttpClient
 		if (isset($info['request_header'])) {
 			list($info['request_header']) = self::parseHeaders($info['request_header']);
 		}
-		$info['method'] = isset($post['method']) ? $post['method']: 'GET';
+		$info['method'] = $request->getMethod() ? $request->getMethod() : 'GET';
 		$info['headers'] = self::parseHeaders(substr($result, 0, $info['header_size']));
 		$info['error'] = $result === FALSE ? ['message' => curl_error($ch), 'code' => curl_errno($ch)] : [];
 
