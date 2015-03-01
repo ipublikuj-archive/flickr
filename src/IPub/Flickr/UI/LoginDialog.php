@@ -1,6 +1,6 @@
 <?php
 /**
- * FlickrExtension.php
+ * LoginDialog.php
  *
  * @copyright	More in license.md
  * @license		http://www.ipublikuj.eu
@@ -14,7 +14,6 @@
 
 namespace IPub\Flickr\UI;
 
-use Kdyby\Github\ApiException;
 use Nette;
 use Nette\Application;
 use Nette\Http;

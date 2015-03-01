@@ -1,6 +1,6 @@
 <?php
 /**
- * Configuration.php
+ * SessionStorage.php
  *
  * @copyright	More in license.md
  * @license		http://www.ipublikuj.eu
