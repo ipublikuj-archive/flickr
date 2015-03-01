@@ -171,8 +171,12 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 		$client->onError[] = $this->failure;
 		$client->onSuccess[] = $this->success;
 
-		self::getDebuggerBar()->addPanel($this);
-		self::getDebuggerBlueScreen()->addPanel(array($this, 'renderException'));
+		if ($bar = self::getDebuggerBar()) {
+			$bar->addPanel($this);
+		}
+		if ($blueScreen = self::getDebuggerBlueScreen()) {
+			$blueScreen->addPanel(array($this, 'renderException'));
+		}
 	}
 
 	public function renderException(\Exception $e = NULL)
@@ -245,7 +249,16 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 	 */
 	private static function getDebuggerBar()
 	{
-		return method_exists('Tracy\Debugger', 'getBar') ? Debugger::getBar() : Debugger::$bar;
+		if (method_exists('Tracy\Debugger', 'getBar')) {
+			return Debugger::getBar();
+
+		} else {
+			$reflector = new \ReflectionClass(get_class(new Debugger()));
+
+			$prop = $reflector->getProperty('bar');
+
+			return $prop->isPublic() ? Debugger::$bar : FALSE;
+		}
 	}
 
 	/**
@@ -253,6 +266,15 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 	 */
 	private static function getDebuggerBlueScreen()
 	{
-		return method_exists('Tracy\Debugger', 'getBlueScreen') ? Debugger::getBlueScreen() : Debugger::$blueScreen;
+		if (method_exists('Tracy\Debugger', 'getBlueScreen')) {
+			return Debugger::getBlueScreen();
+
+		} else {
+			$reflector = new \ReflectionClass(get_class(new Debugger()));
+
+			$prop = $reflector->getProperty('blueScreen');
+
+			return $prop->isPublic() ? Debugger::$blueScreen : FALSE;
+		}
 	}
 }
