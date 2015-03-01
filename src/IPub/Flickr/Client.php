@@ -317,7 +317,7 @@ class Client extends Nette\Object
 	/**
 	 * Simply pass anything starting with a slash and it will call the Api, for example
 	 * <code>
-	 * $details = $flickr->api('flick.people.info');
+	 * $details = $flickr->api('flickr.people.info');
 	 * </code>
 	 *
 	 * @param string $path
