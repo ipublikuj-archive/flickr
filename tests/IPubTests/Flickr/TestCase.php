@@ -122,11 +122,15 @@ class ArraySessionStorage extends Nette\Object implements Http\ISessionStorage
 	public function open($savePath, $sessionName)
 	{
 		$this->session = [];
+
+		return TRUE;
 	}
 
 	public function close()
 	{
 		$this->session = [];
+
+		return TRUE;
 	}
 
 	public function read($id)
@@ -137,15 +141,19 @@ class ArraySessionStorage extends Nette\Object implements Http\ISessionStorage
 	public function write($id, $data)
 	{
 		$this->session[$id] = $data;
+
+		return TRUE;
 	}
 
 	public function remove($id)
 	{
 		unset($this->session[$id]);
+
+		return TRUE;
 	}
 
 	public function clean($maxlifetime)
 	{
-
+		return TRUE;
 	}
 }
