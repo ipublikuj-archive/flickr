@@ -25,8 +25,9 @@ use Tracy\IBarPanel;
 
 use IPub;
 use IPub\Flickr;
-use IPub\Flickr\Api;
-use IPub\Flickr\Exceptions;
+
+use IPub\OAuth;
+use IPub\OAuth\Api;
 
 if (!class_exists('Tracy\Debugger')) {
 	class_alias('Nette\Diagnostics\Debugger', 'Tracy\Debugger');
@@ -95,7 +96,7 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 		ob_start();
 		$esc = callback('Nette\Templating\Helpers::escapeHtml');
 		$click = class_exists('\Tracy\Dumper')
-			? function ($o, $c = FALSE) { return \Tracy\Dumper::toHtml($o, array('collapse' => $c)); }
+			? function ($o, $c = FALSE) { return Tracy\Dumper::toHtml($o, array('collapse' => $c)); }
 			: callback('\Tracy\Helpers::clickableDump');
 		$totalTime = $this->totalTime ? sprintf('%0.3f', $this->totalTime * 1000) . ' ms' : 'none';
 
@@ -181,7 +182,7 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 
 	public function renderException(\Exception $e = NULL)
 	{
-		if (!$e instanceof Exceptions\ApiException || !$e->response) {
+		if (!$e instanceof OAuth\Exceptions\ApiException || !$e->response) {
 			return NULL;
 		}
 
@@ -209,7 +210,7 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 		$panel .= '<p><b>Response</b></p><div><pre><code>';
 		$panel .= $serializeHeaders($e->response->getHeaders());
 		if ($e->response->getContent()) {
-			$panel .= '<br>' . $h($e->response->toArray() ?: $e->response->getContent());
+			$panel .= '<br>' . $e->response->toArray() ?: $h($e->response->getContent());
 		}
 		$panel .= '</code></pre></div>';
 
@@ -221,6 +222,8 @@ class Panel extends Nette\Object implements Tracy\IBarPanel
 
 	/**
 	 * @param array $options
+	 *
+	 * @return array
 	 */
 	private function toConstantNames(array $options)
 	{

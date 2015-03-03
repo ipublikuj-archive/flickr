@@ -23,16 +23,17 @@ use Kdyby\Curl;
 use IPub;
 use IPub\Flickr;
 use IPub\Flickr\Api;
+use Tracy\Debugger;
 
 class Client extends Nette\Object
 {
 	/**
-	 * OAuth version
+	 * @var IPub\OAuth\Consumer
 	 */
-	const VERSION = '1.0';
+	protected $consumer;
 
 	/**
-	 * @var HttpClient
+	 * @var IPub\OAuth\HttpClient
 	 */
 	private $httpClient;
 
@@ -67,17 +68,20 @@ class Client extends Nette\Object
 	protected $accessToken;
 
 	/**
+	 * @param IPub\OAuth\Consumer $consumer
+	 * @param IPub\OAuth\HttpClient $httpClient
 	 * @param Configuration $config
 	 * @param SessionStorage $session
-	 * @param HttpClient $httpClient
 	 * @param Http\IRequest $httpRequest
 	 */
 	public function __construct(
+		IPub\OAuth\Consumer $consumer,
+		IPub\OAuth\HttpClient $httpClient,
 		Configuration $config,
 		SessionStorage $session,
-		HttpClient $httpClient,
 		Nette\Http\IRequest $httpRequest
 	){
+		$this->consumer = $consumer;
 		$this->config = $config;
 		$this->session = $session;
 		$this->httpClient = $httpClient;
@@ -111,7 +115,7 @@ class Client extends Nette\Object
 	/**
 	 * @internal
 	 *
-	 * @return Api\CurlClient
+	 * @return IPub\OAuth\HttpClient
 	 */
 	public function getHttpClient()
 	{
@@ -234,11 +238,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws Exceptions\ApiException
+	 * @throws IPub\OAuth\Exceptions\ApiException
 	 */
 	public function get($path, array $params = [], array $headers = [])
 	{
-		return $this->api($path, Api\Request::GET, $params, [], $headers);
+		return $this->api($path, IPub\OAuth\Api\Request::GET, $params, [], $headers);
 	}
 
 	/**
@@ -248,11 +252,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws Exceptions\ApiException
+	 * @throws IPub\OAuth\Exceptions\ApiException
 	 */
 	public function head($path, array $params = [], array $headers = [])
 	{
-		return $this->api($path, Api\Request::HEAD, $params, [], $headers);
+		return $this->api($path, IPub\OAuth\Api\Request::HEAD, $params, [], $headers);
 	}
 
 	/**
@@ -263,11 +267,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws Exceptions\ApiException
+	 * @throws IPub\OAuth\Exceptions\ApiException
 	 */
 	public function post($path, array $params = [], $post = [], array $headers = [])
 	{
-		return $this->api($path, Api\Request::POST, $params, $post, $headers);
+		return $this->api($path, IPub\OAuth\Api\Request::POST, $params, $post, $headers);
 	}
 
 	/**
@@ -278,11 +282,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws Exceptions\ApiException
+	 * @throws IPub\OAuth\Exceptions\ApiException
 	 */
 	public function patch($path, array $params = [], $post = [], array $headers = [])
 	{
-		return $this->api($path, Api\Request::PATCH, $params, $post, $headers);
+		return $this->api($path, IPub\OAuth\Api\Request::PATCH, $params, $post, $headers);
 	}
 
 	/**
@@ -293,11 +297,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws Exceptions\ApiException
+	 * @throws IPub\OAuth\Exceptions\ApiException
 	 */
 	public function put($path, array $params = [], $post = [], array $headers = [])
 	{
-		return $this->api($path, Api\Request::PUT, $params, $post, $headers);
+		return $this->api($path, IPub\OAuth\Api\Request::PUT, $params, $post, $headers);
 	}
 
 	/**
@@ -306,18 +310,18 @@ class Client extends Nette\Object
 	 * @param array $headers
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
-	 * 
-	 * @throws Exceptions\ApiException
+	 *
+	 * @throws IPub\OAuth\Exceptions\ApiException
 	 */
 	public function delete($path, array $params = [], array $headers = [])
 	{
-		return $this->api($path, Api\Request::DELETE, $params, [], $headers);
+		return $this->api($path, IPub\OAuth\Api\Request::DELETE, $params, [], $headers);
 	}
 
 	/**
 	 * Simply pass anything starting with a slash and it will call the Api, for example
 	 * <code>
-	 * $details = $flickr->api('flickr.people.info');
+	 * $details = $flickr->api('flick.people.info');
 	 * </code>
 	 *
 	 * @param string $path
@@ -326,17 +330,17 @@ class Client extends Nette\Object
 	 * @param array|string $post Post request parameters or body to send
 	 * @param array $headers Http request headers
 	 *
-	 * @return Utils\ArrayHash|string|Paginator|ArrayHash[]
+	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws Exceptions\ApiException
+	 * @throws IPub\OAuth\Exceptions\ApiException
 	 */
-	public function api($path, $method = Api\Request::GET, array $params = [], $post = [], array $headers = [])
+	public function api($path, $method = IPub\OAuth\Api\Request::GET, array $params = [], $post = [], array $headers = [])
 	{
 		if (is_array($method)) {
 			$headers = $post;
 			$post = $params;
 			$params = $method;
-			$method = Api\Request::GET;
+			$method = IPub\OAuth\Api\Request::GET;
 		}
 
 		$params = array_merge($params, [
@@ -345,14 +349,10 @@ class Client extends Nette\Object
 			'nojsoncallback'    => 1,
 		]);
 
-		$params = array_merge($params, $this->getOauthParams());
-
-		$params['oauth_token'] = $this->getAccessToken('access_token');
-
-		$params['oauth_signature'] = $this->getSignature($method, $this->config->createUrl('api', 'rest'), array_merge($params, $post));
+		$token = new IPub\OAuth\Token($this->session->access_token, $this->session->access_token_secret);
 
 		$response = $this->httpClient->makeRequest(
-			new Api\Request($this->config->createUrl('api', 'rest', $params), $method, $post, $headers)
+			new IPub\OAuth\Api\Request($this->consumer, $this->config->createUrl('api', 'rest', $params), $method, $post, $headers, $token)
 		);
 
 		if (!$response->isJson() || (!$data = Utils\ArrayHash::from($response->toArray())) || Utils\Strings::lower($data->stat) != 'ok') {
@@ -375,8 +375,8 @@ class Client extends Nette\Object
 	 *
 	 * @return int
 	 *
-	 * @throws Exceptions\ApiException|static
 	 * @throws Exceptions\InvalidArgumentException
+	 * @throws IPub\OAuth\Exceptions\ApiException|static
 	 */
 	public function uploadPhoto($photo, array $params = [])
 	{
@@ -392,8 +392,8 @@ class Client extends Nette\Object
 	 *
 	 * @return int
 	 *
-	 * @throws Exceptions\ApiException|static
 	 * @throws Exceptions\InvalidArgumentException
+	 * @throws IPub\OAuth\Exceptions\ApiException|static
 	 */
 	public function replacePhoto($photo, $photoId, $async = FALSE)
 	{
@@ -413,8 +413,8 @@ class Client extends Nette\Object
 	 *
 	 * @return string
 	 *
-	 * @throws Exceptions\ApiException|static
 	 * @throws Exceptions\InvalidArgumentException
+	 * @throws IPub\OAuth\Exceptions\ApiException|static
 	 */
 	private function processImage($method, $photo, array $params = [])
 	{
@@ -422,23 +422,21 @@ class Client extends Nette\Object
 			throw new Flickr\Exceptions\InvalidArgumentException("File '$photo' does not exists. Please provide valid path to file.");
 		}
 
-		// Complete request params
-		$params = array_merge($params, $this->getOauthParams());
-		$params['oauth_token'] = $this->getAccessToken('access_token');
-
-		$params['oauth_signature'] = $this->getSignature(Api\Request::POST, $this->config->createUrl('upload', $method), $params);
-
 		// Add file to post params
-		$params['photo'] = new \CURLFile($photo);
+		$post = [
+			'photo' => new \CURLFile($photo),
+		];
+
+		$token = new IPub\OAuth\Token($this->session->access_token, $this->session->access_token_secret);
 
 		$response = $this->httpClient->makeRequest(
-			new Api\Request($this->config->createUrl('upload', $method), Api\Request::POST, $params)
+			new IPub\OAuth\Api\Request($this->consumer, $this->config->createUrl('upload', $method, $params), IPub\OAuth\Api\Request::POST, $post, [], $token)
 		);
 
 		// Parse REST xml response
 		$xmlContent = simplexml_load_string($response->getContent());
 
-		if ($response->isOk() && Utils\Strings::lower((string) $xmlContent['stat']) == 'ok' && $photoId = (string) $xmlContent->photoid[0]) {
+		if ($response->isOk() && $response->isXml() && Utils\Strings::lower((string) $xmlContent['stat']) == 'ok' && $photoId = (string) $xmlContent->photoid[0]) {
 			return $photoId;
 
 		} else {
@@ -533,34 +531,28 @@ class Client extends Nette\Object
 		$this->session->clearAll();
 
 		// Complete request params
-		$params = $this->getOauthParams();
-		$params['oauth_callback'] = $callback;
-		$params['oauth_signature'] = $this->getSignature(Api\Request::GET, $this->config->createUrl('oauth', 'request_token'), $params);
+		$params = [
+			'oauth_callback' => $callback,
+		];
 
 		$response = $this->httpClient->makeRequest(
-			new Api\Request($this->config->createUrl('oauth', 'request_token', $params), Api\Request::GET)
+			new IPub\OAuth\Api\Request($this->consumer, $this->config->createUrl('oauth', 'request_token', $params), IPub\OAuth\Api\Request::GET)
 		);
 
-		if ($response->isOk()) {
-			$token = [];
-			parse_str($response->getContent(), $token);
+		if (!$response->isOk() || !$response->isQueryString() || (!$data = Utils\ArrayHash::from($response->toArray()))) {
+			return TRUE;
 
-			if (isset($token['oauth_callback_confirmed']) && Utils\Strings::lower($token['oauth_callback_confirmed']) == 'true') {
-				if (isset($token['oauth_token'])) {
-					$this->session->request_token = $token['oauth_token'];
+		} else {
+			if ($data->offsetExists('oauth_callback_confirmed') && Utils\Strings::lower($data->oauth_callback_confirmed) == 'true') {
+				if ($data->offsetExists('oauth_token') && $data->offsetExists('oauth_token_secret')) {
+					$this->session->request_token = $data->oauth_token;
+					$this->session->request_token_secret = $data->oauth_token_secret;
 
-				} else {
-					return FALSE;
-				}
-
-				if (isset($token['oauth_token_secret'])) {
-					$this->session->request_token_secret = $token['oauth_token_secret'];
+					return TRUE;
 
 				} else {
 					return FALSE;
 				}
-
-				return TRUE;
 			}
 		}
 
@@ -586,179 +578,36 @@ class Client extends Nette\Object
 			return FALSE;
 		}
 
-		$params = $this->getOauthParams();
-		$params['oauth_token'] =  $token;
-		$params['oauth_verifier'] = $verifier;
-		$params['oauth_signature'] = $this->getSignature(Api\Request::GET, $this->config->createUrl('oauth', 'access_token'), $params);
+		// Complete request params
+		$params = [
+			'oauth_token' =>  $token,
+			'oauth_verifier' => $verifier,
+		];
+
+		$token = new IPub\OAuth\Token($this->session->request_token, $this->session->request_token_secret);
 
 		$response = $this->httpClient->makeRequest(
-			new Api\Request($this->config->createUrl('oauth', 'access_token', $params), Api\Request::GET)
+			new IPub\OAuth\Api\Request($this->consumer, $this->config->createUrl('oauth', 'access_token', $params), IPub\OAuth\Api\Request::GET, [], [], $token)
 		);
 
-		if ($response->isOk()) {
-			$token = [];
-			parse_str($response->getContent(), $token);
-
-			if (isset($token['oauth_token'])) {
-				$this->session->access_token = $token['oauth_token'];
-
-			} else {
-				return FALSE;
-			}
-
-			if (isset($token['oauth_token_secret'])) {
-				$this->session->access_token_secret = $token['oauth_token_secret'];
-
-			} else {
-				return FALSE;
-			}
-
-		} else {
+		if (!$response->isOk() || !$response->isQueryString() || (!$data = Utils\ArrayHash::from($response->toArray()))) {
 			// most likely that user very recently revoked authorization.
 			// In any event, we don't have an access token, so say so.
-			return FALSE;
+			return TRUE;
+
+		} else {
+			if ($data->offsetExists('oauth_token') && $data->offsetExists('oauth_token_secret')) {
+				$this->session->access_token = $data->oauth_token;
+				$this->session->access_token_secret = $data->oauth_token_secret;
+
+				return TRUE;
+
+			} else {
+				return FALSE;
+			}
 		}
 
-		return TRUE;
-	}
-
-	/**
-	 * Sign an array of parameters with an OAuth signature
-	 *
-	 * @internal
-	 *
-	 * @param string $method
-	 * @param string $url
-	 * @param array $parameters
-	 *
-	 * @return string
-	 */
-	public function getSignature($method, $url, $parameters)
-	{
-		$baseString = $this->getBaseString($method, $url, $parameters);
-
-		$keyPart1 = $this->config->appSecret;
-		$keyPart2 = $this->session->access_token_secret;
-
-		if (empty($keyPart2)) {
-			$keyPart2 = $this->session->request_token_secret;
-		}
-
-		if (empty($keyPart2)) {
-			$keyPart2 = '';
-		}
-
-		$key = "$keyPart1&$keyPart2";
-
-		return base64_encode($this->hmac('sha1', $baseString, $key));
-	}
-
-	/**
-	 * Get the base string for creating an OAuth signature
-	 *
-	 * @param string $method
-	 * @param string $url
-	 * @param array $parameters
-	 * @return string
-	 */
-	private function getBaseString($method, $url, $parameters)
-	{
-		ksort($parameters, SORT_STRING);
-
-		$components = [
-			rawurlencode($method),
-			rawurlencode($url),
-			rawurlencode($this->joinParameters($parameters))
-		];
-
-		$baseString = implode('&', $components);
-
-		return $baseString;
-	}
-
-	/**
-	 * Join an array of parameters together into a URL-encoded string
-	 *
-	 * @param array $parameters
-	 *
-	 * @return string
-	 */
-	private function joinParameters($parameters)
-	{
-		$keyValuePairs = [];
-
-		foreach ($parameters as $key=>$value)  {
-			array_push($keyValuePairs, rawurlencode($key) . "=" . rawurlencode($value));
-		}
-
-		return implode('&', $keyValuePairs);
-	}
-
-	/**
-	 * Get the standard OAuth parameters
-	 *
-	 * @return array
-	 */
-	private function getOauthParams()
-	{
-		$params = [
-			'oauth_nonce' => $this->makeNonce(),
-			'oauth_timestamp' => time(),
-			'oauth_consumer_key' => $this->config->appKey,
-			'oauth_signature_method' => 'HMAC-SHA1',
-			'oauth_version' => self::VERSION,
-		];
-
-		return $params;
-	}
-
-	/**
-	 * Create a nonce
-	 *
-	 * @return string
-	 */
-	private function makeNonce()
-	{
-		// Create a string that will be unique for this app and this user at this time
-		$reasonablyDistinctiveString = implode(':',
-			[
-				$this->config->appSecret,
-				$this->session->user_id,
-				microtime()
-			]
-		);
-
-		return md5($reasonablyDistinctiveString);
-	}
-
-	/**
-	 * @param string $function
-	 * @param string $data
-	 * @param string $key
-	 *
-	 * @return string
-	 */
-	private function hmac($function, $data, $key)
-	{
-		switch($function)
-		{
-			case 'sha1':
-				$pack = 'H40';
-				break;
-
-			default:
-				return '';
-		}
-
-		if (strlen($key) > 64) {
-			$key = pack($pack, $function($key));
-		}
-
-		if (strlen($key) < 64) {
-			$key = str_pad($key, 64, "\0");
-		}
-
-		return (pack($pack, $function((str_repeat("\x5c", 64) ^ $key) . pack($pack, $function((str_repeat("\x36", 64) ^ $key) . $data)))));
+		return FALSE;
 	}
 
 	/**

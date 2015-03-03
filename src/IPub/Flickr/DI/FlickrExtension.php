@@ -36,15 +36,8 @@ class FlickrExtension extends DI\CompilerExtension
 		'appSecret' => NULL,
 		'permission' => 'read',          // read/write/delete
 		'clearAllWithLogout' => TRUE,
-		'curlOptions' => [],
 		'debugger' => '%debugMode%',
 	];
-
-	public function __construct()
-	{
-		// Apply default curl options from api
-		$this->defaults['curlOptions'] = IPub\Flickr\Api\CurlClient::$defaultCurlOptions;
-	}
 
 	public function loadConfiguration()
 	{
@@ -55,8 +48,11 @@ class FlickrExtension extends DI\CompilerExtension
 		Utils\Validators::assert($config['appSecret'], 'string', 'Application secret');
 		Utils\Validators::assert($config['permission'], 'string', 'Application permission');
 
+		// Create oAuth consumer
+		$consumer = new IPub\OAuth\Consumer($config['appKey'], $config['appSecret']);
+
 		$builder->addDefinition($this->prefix('client'))
-			->setClass('IPub\Flickr\Client');
+			->setClass('IPub\Flickr\Client', [$consumer]);
 
 		$builder->addDefinition($this->prefix('config'))
 			->setClass('IPub\Flickr\Configuration', [
@@ -72,10 +68,6 @@ class FlickrExtension extends DI\CompilerExtension
 			}
 		}
 
-		$httpClient = $builder->addDefinition($this->prefix('httpClient'))
-			->setClass('IPub\Flickr\Api\CurlClient')
-			->addSetup('$service->curlOptions = ?;', [$config['curlOptions']]);
-
 		$builder->addDefinition($this->prefix('session'))
 			->setClass('IPub\Flickr\SessionStorage');
 
@@ -83,7 +75,8 @@ class FlickrExtension extends DI\CompilerExtension
 			$builder->addDefinition($this->prefix('panel'))
 				->setClass('IPub\Flickr\Diagnostics\Panel');
 
-			$httpClient->addSetup($this->prefix('@panel') . '::register', array('@self'));
+			$builder->getDefinition($builder->getByType('\IPub\OAuth\Api\CurlClient') ?:'oauth.httpClient')
+				->addSetup($this->prefix('@panel') . '::register', array('@self'));
 		}
 
 		if ($config['clearAllWithLogout']) {

@@ -25,6 +25,8 @@
 		"nette/di"			: "~2.2",
 		"nette/http"		: "~2.2",
 
+		"ipub/oauth"		: "@dev",
+
 		"kdyby/curl-ca-bundle"	: "~1.0",
 
 		"ext-curl"	: "*",

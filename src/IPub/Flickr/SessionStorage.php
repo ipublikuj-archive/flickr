@@ -23,8 +23,6 @@ use Nette\Http;
  * @package		iPublikuj:Flickr!
  * @subpackage	common
  *
- * @property string $state A CSRF state variable to assist in the defense against CSRF attacks.
- * @property string $code
  * @property string $access_token
  * @property string $access_token_secret
  * @property string $request_token

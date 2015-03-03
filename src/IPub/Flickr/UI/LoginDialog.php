@@ -107,6 +107,7 @@ class LoginDialog extends Application\UI\Control
 	 */
 	public function handleOpen()
 	{
+$this->session->clearAll();
 		if (!$this->client->getUser()) { // no user
 			$this->open();
 		}

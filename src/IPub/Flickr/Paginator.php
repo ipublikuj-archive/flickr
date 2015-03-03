@@ -16,6 +16,8 @@ namespace IPub\Flickr;
 
 use Nette;
 
+use IPub;
+
 /**
  * @author Filip Procházka <filip@prochazka.su>
  */
@@ -29,7 +31,7 @@ class Paginator extends Nette\Object implements \Iterator
 	private $client;
 
 	/**
-	 * @var Api\CurlClient
+	 * @var IPub\OAuth\HttpClient
 	 */
 	private $httpClient;
 
@@ -54,7 +56,7 @@ class Paginator extends Nette\Object implements \Iterator
 	private $resources = [];
 
 	/**
-	 * @var Api\Response[]
+	 * @var IPub\OAuth\Api\Response[]
 	 */
 	private $responses = [];
 
@@ -70,9 +72,9 @@ class Paginator extends Nette\Object implements \Iterator
 
 	/**
 	 * @param Client $client
-	 * @param Api\Response $response
+	 * @param IPub\OAuth\Api\Response $response
 	 */
-	public function __construct(Client $client, Api\Response $response)
+	public function __construct(Client $client, IPub\OAuth\Api\Response $response)
 	{
 		$this->client = $client;
 
@@ -160,12 +162,6 @@ class Paginator extends Nette\Object implements \Iterator
 
 			$params = $this->responses[$this->pageCursor]->request->getParameters();
 			$params['page'] = isset($params['page']) ? (int) max($params['page'], 1) + 1 : 1;
-			if (isset($params['oauth_signature'])) {
-				unset($params['oauth_signature']);
-			}
-			$params['oauth_signature'] = $this->client->getSignature(
-				$this->responses[$this->pageCursor]->request->getMethod(), $this->client->getConfig()->createUrl('api', 'rest'), $params
-			);
 
 			$response = $this->httpClient->makeRequest(
 				$prevRequest->copyWithUrl($this->client->getConfig()->createUrl('api', 'rest', $params))
