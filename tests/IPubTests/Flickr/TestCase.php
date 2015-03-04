@@ -66,7 +66,7 @@ class TestCase extends Tester\TestCase
 	}
 }
 
-class ApiClientMock extends Nette\Object implements IPub\Flickr\HttpClient
+class ApiClientMock extends Nette\Object implements IPub\OAuth\HttpClient
 {
 	/**
 	 * @var Api\Request[]
