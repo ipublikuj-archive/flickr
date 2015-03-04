@@ -22,8 +22,10 @@ use Tester;
 
 use IPub;
 use IPub\Flickr;
-use IPub\Flickr\Api;
 use IPub\Flickr\Exceptions;
+
+use IPub\OAuth;
+use IPub\OAuth\Api;
 
 require_once __DIR__ . '/../bootstrap.php';
 
@@ -81,8 +83,8 @@ class ApiClientMock extends Nette\Object implements IPub\Flickr\HttpClient
 	 *
 	 * @return Api\Response
 	 *
-	 * @throws Exceptions\ApiException
 	 * @throws Exceptions\InvalidStateException
+	 * @throws OAuth\Exceptions\ApiException
 	 */
 	public function makeRequest(Api\Request $request)
 	{

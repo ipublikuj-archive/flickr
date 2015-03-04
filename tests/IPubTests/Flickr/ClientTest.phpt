@@ -22,7 +22,6 @@ use Tester\Assert;
 
 use IPub;
 use IPub\Flickr;
-use Tracy\Debugger;
 
 require_once __DIR__ . '/TestCase.php';
 

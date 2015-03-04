@@ -49,7 +49,6 @@ class ExtensionTest extends Tester\TestCase
 		Assert::true($dic->getService('flickr.client') instanceof IPub\Flickr\Client);
 		Assert::true($dic->getService('flickr.config') instanceof IPub\Flickr\Configuration);
 		Assert::true($dic->getService('flickr.session') instanceof IPub\Flickr\SessionStorage);
-		Assert::true($dic->getService('flickr.httpClient') instanceof IPub\Flickr\Api\CurlClient);
 	}
 }
 
