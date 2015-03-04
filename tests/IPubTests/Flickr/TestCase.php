@@ -64,7 +64,7 @@ class TestCase extends Tester\TestCase
 
 		$consumer = new OAuth\Consumer('123', 'abc');
 
-		return new IPub\Flickr\Client($consumer, $this->config, $this->session, $this->httpClient, $httpRequest);
+		return new IPub\Flickr\Client($consumer, $this->httpClient, $this->config, $this->session, $httpRequest);
 	}
 }
 
