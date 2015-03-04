@@ -62,6 +62,8 @@ class TestCase extends Tester\TestCase
 
 		$this->httpClient = new ApiClientMock();
 
+		$consumer = new OAuth\Consumer('123', 'abc');
+
 		return new IPub\Flickr\Client($this->config, $this->session, $this->httpClient, $httpRequest);
 	}
 }
