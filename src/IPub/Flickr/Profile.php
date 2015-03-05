@@ -18,7 +18,6 @@ use Nette;
 use Nette\Utils;
 
 use IPub;
-use IPub\Flickr\Api;
 use IPub\Flickr\Exceptions;
 
 class Profile extends Nette\Object
