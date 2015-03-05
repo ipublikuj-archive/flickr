@@ -64,17 +64,17 @@ class ClientTest extends TestCase
 
 		Assert::same('GET', $secondRequest->getMethod());
 		Assert::match('https://api.flickr.com/services/rest', $secondRequest->getUrl()->getHostUrl() . $secondRequest->getUrl()->getPath());
-		Assert::same(['Accept' => 'application/json'], $secondRequest->getHeaders());
+		Assert::same(['Authorization' => $this->generateAuthenticationHeader($secondRequest->getParameters()), 'Accept' => 'application/json'], $secondRequest->getHeaders());
 	}
 
 	public function testAuthorized_authorizeFromVerifierAndToken()
 	{
 		$client = $this->buildClient(array('oauth_verifier' => 'abcedf', 'oauth_token' => 'ghijklmn'));
 
-		$this->httpClient->fakeResponse('fullname=John%20Doe&oauth_token=72157626318069415-087bfc7b5816092c&oauth_token_secret=a202d1f853ec69de&user_nsid=21207597%40N07&username=john.doe', 200, ['Content-Type' => 'application/json; charset=utf-8']);
+		$this->httpClient->fakeResponse('fullname=John%20Doe&oauth_token=72157626318069415-087bfc7b5816092c&oauth_token_secret=a202d1f853ec69de&user_nsid=21207597%40N07&username=john.doe', 200, ['Content-Type' => 'text/plain; charset=utf-8']);
 		$this->httpClient->fakeResponse('{"stat":"ok","user":{"id":"21207597%40N07","username":{"_content":"john.doe"}}}', 200, ['Content-Type' => 'application/json; charset=utf-8']);
 
-//		Assert::same('21207597%40N07', $client->getUser());
+		Assert::same('21207597%40N07', $client->getUser());
 		Assert::count(2, $this->httpClient->requests);
 
 		$firstRequest = $this->httpClient->requests[0];
@@ -87,7 +87,26 @@ class ClientTest extends TestCase
 
 		Assert::same('GET', $secondRequest->getMethod());
 		Assert::match('https://api.flickr.com/services/rest', $secondRequest->getUrl()->getHostUrl() . $secondRequest->getUrl()->getPath());
-		Assert::same(['Accept' => 'application/json'], $secondRequest->getHeaders());
+		Assert::same(['Authorization' => $this->generateAuthenticationHeader($secondRequest->getParameters()), 'Accept' => 'application/json'], $secondRequest->getHeaders());
+	}
+
+	/**
+	 * @param array $parameters
+	 *
+	 * @return string
+	 */
+	private function generateAuthenticationHeader($parameters)
+	{
+		ksort($parameters, SORT_STRING);
+		$authHeader = NULL;
+
+		foreach ($parameters as $key => $value) {
+			if (strpos($key, 'oauth_') !== FALSE) {
+				$authHeader .= ' ' . $key . '="' . $value . '",';
+			}
+		}
+
+		return 'OAuth ' . trim(rtrim($authHeader, ','));
 	}
 }
 
