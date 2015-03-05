@@ -24,12 +24,10 @@
 		"nette/application"	: "~2.2",
 		"nette/di"			: "~2.2",
 		"nette/http"		: "~2.2",
+		"nette/utils"		: "~2.2",
 
-		"ipub/oauth"		: "@dev",
+		"ipub/oauth"		: "~1.0",
 
-		"kdyby/curl-ca-bundle"	: "~1.0",
-
-		"ext-curl"	: "*",
 		"ext-json"	: "*"
 	},
 

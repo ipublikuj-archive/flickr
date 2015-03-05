@@ -20,6 +20,7 @@ use Nette\Utils;
 
 use IPub;
 use IPub\Flickr;
+use IPub\Flickr\Api;
 
 use IPub\OAuth;
 
@@ -241,14 +242,14 @@ class Client extends Nette\Object
 	/**
 	 * @param string $path
 	 * @param array $params
-	 * @param array|string $post
+	 * @param array $post
 	 * @param array $headers
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
 	 * @throws OAuth\Exceptions\ApiException
 	 */
-	public function post($path, array $params = [], $post = [], array $headers = [])
+	public function post($path, array $params = [], array $post = [], array $headers = [])
 	{
 		return $this->api($path, OAuth\Api\Request::POST, $params, $post, $headers);
 	}
@@ -256,14 +257,14 @@ class Client extends Nette\Object
 	/**
 	 * @param string $path
 	 * @param array $params
-	 * @param array|string $post
+	 * @param array $post
 	 * @param array $headers
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
 	 * @throws OAuth\Exceptions\ApiException
 	 */
-	public function patch($path, array $params = [], $post = [], array $headers = [])
+	public function patch($path, array $params = [], array $post = [], array $headers = [])
 	{
 		return $this->api($path, OAuth\Api\Request::PATCH, $params, $post, $headers);
 	}
@@ -271,14 +272,14 @@ class Client extends Nette\Object
 	/**
 	 * @param string $path
 	 * @param array $params
-	 * @param array|string $post
+	 * @param array $post
 	 * @param array $headers
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
 	 * @throws OAuth\Exceptions\ApiException
 	 */
-	public function put($path, array $params = [], $post = [], array $headers = [])
+	public function put($path, array $params = [], array $post = [], array $headers = [])
 	{
 		return $this->api($path, OAuth\Api\Request::PUT, $params, $post, $headers);
 	}
@@ -306,14 +307,14 @@ class Client extends Nette\Object
 	 * @param string $path
 	 * @param string $method The argument is optional
 	 * @param array $params Query parameters
-	 * @param array|string $post Post request parameters or body to send
+	 * @param array $post Post request parameters or body to send
 	 * @param array $headers Http request headers
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
 	 * @throws OAuth\Exceptions\ApiException
 	 */
-	public function api($path, $method = OAuth\Api\Request::GET, array $params = [], $post = [], array $headers = [])
+	public function api($path, $method = OAuth\Api\Request::GET, array $params = [], array $post = [], array $headers = [])
 	{
 		if (is_array($method)) {
 			$headers = $post;
@@ -329,7 +330,7 @@ class Client extends Nette\Object
 		]);
 
 		$response = $this->httpClient->makeRequest(
-			new OAuth\Api\Request($this->consumer, $this->config->createUrl('api', 'rest', $params), $method, $post, $headers, $this->getAccessToken(), $this->session->user_id),
+			new Api\Request($this->consumer, $this->config->createUrl('api', 'rest', $params), $method, $post, $headers, $this->getAccessToken()),
 			'HMAC-SHA1'
 		);
 
@@ -410,7 +411,7 @@ class Client extends Nette\Object
 		];
 
 		$response = $this->httpClient->makeRequest(
-			new OAuth\Api\Request($this->consumer, $this->config->createUrl('upload', $method, $params), OAuth\Api\Request::POST, $post, [], $this->getAccessToken(), $this->session->user_id),
+			new Api\Request($this->consumer, $this->config->createUrl('upload', $method, $params), OAuth\Api\Request::POST, $post, [], $this->getAccessToken()),
 			'HMAC-SHA1'
 		);
 
@@ -514,7 +515,7 @@ class Client extends Nette\Object
 		];
 
 		$response = $this->httpClient->makeRequest(
-			new OAuth\Api\Request($this->consumer, $this->config->createUrl('oauth', 'request_token', $params), OAuth\Api\Request::GET),
+			new Api\Request($this->consumer, $this->config->createUrl('oauth', 'request_token', $params), OAuth\Api\Request::GET),
 			'HMAC-SHA1'
 		);
 
@@ -563,7 +564,7 @@ class Client extends Nette\Object
 		$token = new OAuth\Token($this->session->request_token, $this->session->request_token_secret);
 
 		$response = $this->httpClient->makeRequest(
-			new OAuth\Api\Request($this->consumer, $this->config->createUrl('oauth', 'access_token', $params), OAuth\Api\Request::GET, [], [], $token),
+			new Api\Request($this->consumer, $this->config->createUrl('oauth', 'access_token', $params), OAuth\Api\Request::GET, [], [], $token),
 			'HMAC-SHA1'
 		);
 

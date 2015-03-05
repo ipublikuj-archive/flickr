@@ -24,7 +24,7 @@ class YourAppSomePresenter extends BasePresenter
 				'description' => 'And here you can place some description'
 			]);
 
-		} catch (\IPub\Flickr\ApiException $ex) {
+		} catch (\IPub\OAuth\ApiException $ex) {
 			// something went wrong
 		}
 	}
@@ -60,7 +60,7 @@ class YourAppSomePresenter extends BasePresenter
 		try {
 			$photoId = $this->flickr->replacePhoto('full/absolute/path/to/your/image.jpg', 123456789);
 
-		} catch (\IPub\Flickr\ApiException $ex) {
+		} catch (\IPub\OAuth\ApiException $ex) {
 			// something went wrong
 		}
 	}

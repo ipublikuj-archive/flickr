@@ -133,7 +133,7 @@ class LoginPresenter extends BasePresenter
 				 * You can celebrate now! The user is authenticated :)
 				 */
 
-			} catch (\IPub\Flickr\ApiException $ex) {
+			} catch (\IPub\OAuth\ApiException $ex) {
 				/**
 				 * You might wanna know what happened, so let's log the exception.
 				 *
@@ -190,7 +190,7 @@ Please keep in mind that the user can revoke the access to his account literary 
 ```php
 try {
 	// ...
-} catch (\IPub\Flickr\ApiException $ex) {
+} catch (\IPub\OAuth\ApiException $ex) {
 	// ...
 }
 ```
