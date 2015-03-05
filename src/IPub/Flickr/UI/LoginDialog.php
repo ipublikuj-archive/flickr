@@ -22,6 +22,8 @@ use IPub;
 use IPub\Flickr;
 use IPub\Flickr\Exceptions;
 
+use IPub\OAuth;
+
 /**
  * Component that you can connect to presenter
  * and use as public mediator for Flickr OAuth redirects communication
@@ -107,7 +109,6 @@ class LoginDialog extends Application\UI\Control
 	 */
 	public function handleOpen()
 	{
-$this->session->clearAll();
 		if (!$this->client->getUser()) { // no user
 			$this->open();
 		}
@@ -118,7 +119,7 @@ $this->session->clearAll();
 
 	/**
 	 * @throws Nette\Application\AbortException
-	 * @throws Exceptions\RequestFailedException
+	 * @throws OAuth\Exceptions\RequestFailedException
 	 */
 	public function open()
 	{
@@ -126,7 +127,7 @@ $this->session->clearAll();
 			$this->presenter->redirectUrl($this->getUrl());
 
 		} else {
-			throw new Exceptions\RequestFailedException('User could not be authenticated.', 'flickr');
+			throw new OAuth\Exceptions\RequestFailedException('User could not be authenticated.', 'flickr');
 		}
 	}
 
@@ -135,9 +136,6 @@ $this->session->clearAll();
 	 */
 	public function getQueryParams()
 	{
-		// CSRF
-		$this->client->getSession()->establishCSRFTokenState();
-
 		$params = [
 			'oauth_token' => $this->session->request_token,
 			'perms' => $this->config->permission
@@ -158,6 +156,6 @@ $this->session->clearAll();
 	{
 		$this->client->getUser(); // check the received parameters and save user
 		$this->onResponse($this);
-		$this->presenter->redirect('this', ['state' => NULL, 'code' => NULL]);
+		$this->presenter->redirect('this', ['oauth_token' => NULL, 'oauth_verifier' => NULL]);
 	}
 }

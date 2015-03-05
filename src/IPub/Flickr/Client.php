@@ -18,22 +18,20 @@ use Nette;
 use Nette\Http;
 use Nette\Utils;
 
-use Kdyby\Curl;
-
 use IPub;
 use IPub\Flickr;
-use IPub\Flickr\Api;
-use Tracy\Debugger;
+
+use IPub\OAuth;
 
 class Client extends Nette\Object
 {
 	/**
-	 * @var IPub\OAuth\Consumer
+	 * @var OAuth\Consumer
 	 */
 	protected $consumer;
 
 	/**
-	 * @var IPub\OAuth\HttpClient
+	 * @var OAuth\HttpClient
 	 */
 	private $httpClient;
 
@@ -63,20 +61,20 @@ class Client extends Nette\Object
 	 * The OAuth access token received in exchange for a valid authorization code
 	 * null means the access token has yet to be determined
 	 *
-	 * @var array|null
+	 * @var OAuth\Token
 	 */
 	protected $accessToken;
 
 	/**
-	 * @param IPub\OAuth\Consumer $consumer
-	 * @param IPub\OAuth\HttpClient $httpClient
+	 * @param OAuth\Consumer $consumer
+	 * @param OAuth\HttpClient $httpClient
 	 * @param Configuration $config
 	 * @param SessionStorage $session
 	 * @param Http\IRequest $httpRequest
 	 */
 	public function __construct(
-		IPub\OAuth\Consumer $consumer,
-		IPub\OAuth\HttpClient $httpClient,
+		OAuth\Consumer $consumer,
+		OAuth\HttpClient $httpClient,
 		Configuration $config,
 		SessionStorage $session,
 		Nette\Http\IRequest $httpRequest
@@ -115,7 +113,7 @@ class Client extends Nette\Object
 	/**
 	 * @internal
 	 *
-	 * @return IPub\OAuth\HttpClient
+	 * @return OAuth\HttpClient
 	 */
 	public function getHttpClient()
 	{
@@ -144,15 +142,11 @@ class Client extends Nette\Object
 			}
 		}
 
-		if (!isset($token['access_token'])) {
-			throw new Exceptions\InvalidArgumentException("It's required that the token has 'access_token' or 'refresh_token' field.");
+		if (!isset($token['access_token']) || !isset($token['access_token_secret'])) {
+			throw new Exceptions\InvalidArgumentException("It's required that the token has 'access_token' and 'access_token_secret' field.");
 		}
 
-		if (isset($token['access_token_secret'])) {
-			$this->setAccessTokenSecret($token['access_token_secret']);
-		}
-
-		$this->accessToken = $token;
+		$this->accessToken = new OAuth\Token($token['access_token'], $token['access_token_secret']);
 
 		return $this;
 	}
@@ -166,7 +160,7 @@ class Client extends Nette\Object
 	 *
 	 * @param string $key
 	 *
-	 * @return array|string The access token
+	 * @return OAuth\Token|string The access token
 	 */
 	public function getAccessToken($key = NULL)
 	{
@@ -175,22 +169,10 @@ class Client extends Nette\Object
 		}
 
 		if ($key !== NULL) {
-			return array_key_exists($key, $this->accessToken) ? $this->accessToken[$key] : NULL;
+			return $this->accessToken->$key ?: NULL;
 		}
 
 		return $this->accessToken;
-	}
-
-	/**
-	 * @param string $secret
-	 *
-	 * @return $this
-	 */
-	public function setAccessTokenSecret($secret)
-	{
-		$this->session->access_token_secret = $secret;
-
-		return $this;
 	}
 
 	/**
@@ -204,11 +186,8 @@ class Client extends Nette\Object
 	 */
 	protected function getUserAccessToken()
 	{
-		if (($verifier = $this->getVerifier()) && $verifier != $this->session->verifier && ($token = $this->getToken()) && $token != $this->session->token) {
+		if (($verifier = $this->getVerifier()) && ($token = $this->getToken())) {
 			if ($this->obtainAccessToken($verifier, $token)) {
-				$this->session->verifier = $verifier;
-				$this->session->token = $token;
-
 				return [
 					'access_token'          => $this->session->access_token,
 					'access_token_secret'   => $this->session->access_token_secret
@@ -238,11 +217,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws IPub\OAuth\Exceptions\ApiException
+	 * @throws OAuth\Exceptions\ApiException
 	 */
 	public function get($path, array $params = [], array $headers = [])
 	{
-		return $this->api($path, IPub\OAuth\Api\Request::GET, $params, [], $headers);
+		return $this->api($path, OAuth\Api\Request::GET, $params, [], $headers);
 	}
 
 	/**
@@ -252,11 +231,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws IPub\OAuth\Exceptions\ApiException
+	 * @throws OAuth\Exceptions\ApiException
 	 */
 	public function head($path, array $params = [], array $headers = [])
 	{
-		return $this->api($path, IPub\OAuth\Api\Request::HEAD, $params, [], $headers);
+		return $this->api($path, OAuth\Api\Request::HEAD, $params, [], $headers);
 	}
 
 	/**
@@ -267,11 +246,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws IPub\OAuth\Exceptions\ApiException
+	 * @throws OAuth\Exceptions\ApiException
 	 */
 	public function post($path, array $params = [], $post = [], array $headers = [])
 	{
-		return $this->api($path, IPub\OAuth\Api\Request::POST, $params, $post, $headers);
+		return $this->api($path, OAuth\Api\Request::POST, $params, $post, $headers);
 	}
 
 	/**
@@ -282,11 +261,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws IPub\OAuth\Exceptions\ApiException
+	 * @throws OAuth\Exceptions\ApiException
 	 */
 	public function patch($path, array $params = [], $post = [], array $headers = [])
 	{
-		return $this->api($path, IPub\OAuth\Api\Request::PATCH, $params, $post, $headers);
+		return $this->api($path, OAuth\Api\Request::PATCH, $params, $post, $headers);
 	}
 
 	/**
@@ -297,11 +276,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws IPub\OAuth\Exceptions\ApiException
+	 * @throws OAuth\Exceptions\ApiException
 	 */
 	public function put($path, array $params = [], $post = [], array $headers = [])
 	{
-		return $this->api($path, IPub\OAuth\Api\Request::PUT, $params, $post, $headers);
+		return $this->api($path, OAuth\Api\Request::PUT, $params, $post, $headers);
 	}
 
 	/**
@@ -311,11 +290,11 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws IPub\OAuth\Exceptions\ApiException
+	 * @throws OAuth\Exceptions\ApiException
 	 */
 	public function delete($path, array $params = [], array $headers = [])
 	{
-		return $this->api($path, IPub\OAuth\Api\Request::DELETE, $params, [], $headers);
+		return $this->api($path, OAuth\Api\Request::DELETE, $params, [], $headers);
 	}
 
 	/**
@@ -332,15 +311,15 @@ class Client extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
 	 *
-	 * @throws IPub\OAuth\Exceptions\ApiException
+	 * @throws OAuth\Exceptions\ApiException
 	 */
-	public function api($path, $method = IPub\OAuth\Api\Request::GET, array $params = [], $post = [], array $headers = [])
+	public function api($path, $method = OAuth\Api\Request::GET, array $params = [], $post = [], array $headers = [])
 	{
 		if (is_array($method)) {
 			$headers = $post;
 			$post = $params;
 			$params = $method;
-			$method = IPub\OAuth\Api\Request::GET;
+			$method = OAuth\Api\Request::GET;
 		}
 
 		$params = array_merge($params, [
@@ -349,10 +328,9 @@ class Client extends Nette\Object
 			'nojsoncallback'    => 1,
 		]);
 
-		$token = new IPub\OAuth\Token($this->session->access_token, $this->session->access_token_secret);
-
 		$response = $this->httpClient->makeRequest(
-			new IPub\OAuth\Api\Request($this->consumer, $this->config->createUrl('api', 'rest', $params), $method, $post, $headers, $token)
+			new OAuth\Api\Request($this->consumer, $this->config->createUrl('api', 'rest', $params), $method, $post, $headers, $this->getAccessToken(), $this->session->user_id),
+			'HMAC-SHA1'
 		);
 
 		if (!$response->isJson() || (!$data = Utils\ArrayHash::from($response->toArray())) || Utils\Strings::lower($data->stat) != 'ok') {
@@ -376,11 +354,13 @@ class Client extends Nette\Object
 	 * @return int
 	 *
 	 * @throws Exceptions\InvalidArgumentException
-	 * @throws IPub\OAuth\Exceptions\ApiException|static
+	 * @throws OAuth\Exceptions\ApiException|static
 	 */
 	public function uploadPhoto($photo, array $params = [])
 	{
-		return $this->processImage('upload', $photo, $params);
+		$data = $this->processImage('upload', $photo, $params);
+
+		return (string) $data->photoid;
 	}
 
 	/**
@@ -393,7 +373,7 @@ class Client extends Nette\Object
 	 * @return int
 	 *
 	 * @throws Exceptions\InvalidArgumentException
-	 * @throws IPub\OAuth\Exceptions\ApiException|static
+	 * @throws OAuth\Exceptions\ApiException|static
 	 */
 	public function replacePhoto($photo, $photoId, $async = FALSE)
 	{
@@ -403,7 +383,9 @@ class Client extends Nette\Object
 			'async' => $async ? 1 : 0
 		];
 
-		return $this->processImage('replace', $photo, $params);
+		$data = $this->processImage('replace', $photo, $params);
+
+		return (string) $data->photoid;
 	}
 
 	/**
@@ -411,15 +393,15 @@ class Client extends Nette\Object
 	 * @param string $photo Path to image
 	 * @param array $params
 	 *
-	 * @return string
+	 * @return Utils\ArrayHash
 	 *
 	 * @throws Exceptions\InvalidArgumentException
-	 * @throws IPub\OAuth\Exceptions\ApiException|static
+	 * @throws OAuth\Exceptions\ApiException|static
 	 */
 	private function processImage($method, $photo, array $params = [])
 	{
 		if (!file_exists($photo)) {
-			throw new Flickr\Exceptions\InvalidArgumentException("File '$photo' does not exists. Please provide valid path to file.");
+			throw new Exceptions\InvalidArgumentException("File '$photo' does not exists. Please provide valid path to file.");
 		}
 
 		// Add file to post params
@@ -427,17 +409,13 @@ class Client extends Nette\Object
 			'photo' => new \CURLFile($photo),
 		];
 
-		$token = new IPub\OAuth\Token($this->session->access_token, $this->session->access_token_secret);
-
 		$response = $this->httpClient->makeRequest(
-			new IPub\OAuth\Api\Request($this->consumer, $this->config->createUrl('upload', $method, $params), IPub\OAuth\Api\Request::POST, $post, [], $token)
+			new OAuth\Api\Request($this->consumer, $this->config->createUrl('upload', $method, $params), OAuth\Api\Request::POST, $post, [], $this->getAccessToken(), $this->session->user_id),
+			'HMAC-SHA1'
 		);
 
-		// Parse REST xml response
-		$xmlContent = simplexml_load_string($response->getContent());
-
-		if ($response->isOk() && $response->isXml() && Utils\Strings::lower((string) $xmlContent['stat']) == 'ok' && $photoId = (string) $xmlContent->photoid[0]) {
-			return $photoId;
+		if ($response->isOk() && $response->isXml() && ($data = Utils\ArrayHash::from($response->toArray())) && $data->{'@attributes'}->stat == 'ok') {
+			return $data;
 
 		} else {
 			$ex = $response->toException();
@@ -485,7 +463,7 @@ class Client extends Nette\Object
 			}
 
 		// User could not be checked through API calls
-		} catch (\Exception $e) {
+		} catch (\Exception $ex) {
 			// Is not necessary to throw exception
 			// when call fails. This fail was already logged.
 		}
@@ -506,7 +484,7 @@ class Client extends Nette\Object
 
 		// use access_token to fetch user id if we have a user access_token, or if
 		// the cached access token has changed
-		if (($accessToken = $this->getAccessToken('access_token')) && !($user && $this->session->access_token === $accessToken)) {
+		if (($accessToken = $this->getAccessToken('token')) && !($user && $this->session->access_token === $accessToken)) {
 			if (!$user = $this->getUserFromAccessToken()) {
 				$this->session->clearAll();
 
@@ -536,24 +514,22 @@ class Client extends Nette\Object
 		];
 
 		$response = $this->httpClient->makeRequest(
-			new IPub\OAuth\Api\Request($this->consumer, $this->config->createUrl('oauth', 'request_token', $params), IPub\OAuth\Api\Request::GET)
+			new OAuth\Api\Request($this->consumer, $this->config->createUrl('oauth', 'request_token', $params), OAuth\Api\Request::GET),
+			'HMAC-SHA1'
 		);
 
 		if (!$response->isOk() || !$response->isQueryString() || (!$data = Utils\ArrayHash::from($response->toArray()))) {
+			return FALSE;
+
+		} else if ($data->offsetExists('oauth_callback_confirmed')
+			&& Utils\Strings::lower($data->oauth_callback_confirmed) == 'true'
+			&& $data->offsetExists('oauth_token')
+			&& $data->offsetExists('oauth_token_secret')
+		) {
+			$this->session->request_token = $data->oauth_token;
+			$this->session->request_token_secret = $data->oauth_token_secret;
+
 			return TRUE;
-
-		} else {
-			if ($data->offsetExists('oauth_callback_confirmed') && Utils\Strings::lower($data->oauth_callback_confirmed) == 'true') {
-				if ($data->offsetExists('oauth_token') && $data->offsetExists('oauth_token_secret')) {
-					$this->session->request_token = $data->oauth_token;
-					$this->session->request_token_secret = $data->oauth_token_secret;
-
-					return TRUE;
-
-				} else {
-					return FALSE;
-				}
-			}
 		}
 
 		return FALSE;
@@ -584,27 +560,27 @@ class Client extends Nette\Object
 			'oauth_verifier' => $verifier,
 		];
 
-		$token = new IPub\OAuth\Token($this->session->request_token, $this->session->request_token_secret);
+		$token = new OAuth\Token($this->session->request_token, $this->session->request_token_secret);
 
 		$response = $this->httpClient->makeRequest(
-			new IPub\OAuth\Api\Request($this->consumer, $this->config->createUrl('oauth', 'access_token', $params), IPub\OAuth\Api\Request::GET, [], [], $token)
+			new OAuth\Api\Request($this->consumer, $this->config->createUrl('oauth', 'access_token', $params), OAuth\Api\Request::GET, [], [], $token),
+			'HMAC-SHA1'
 		);
 
 		if (!$response->isOk() || !$response->isQueryString() || (!$data = Utils\ArrayHash::from($response->toArray()))) {
 			// most likely that user very recently revoked authorization.
 			// In any event, we don't have an access token, so say so.
+			return FALSE;
+
+		} else if ($data->offsetExists('oauth_token') && $data->offsetExists('oauth_token_secret')) {
+			// Clear unused variables
+			$this->session->clearAll();
+
+			// Store access token to session
+			$this->session->access_token = $data->oauth_token;
+			$this->session->access_token_secret = $data->oauth_token_secret;
+
 			return TRUE;
-
-		} else {
-			if ($data->offsetExists('oauth_token') && $data->offsetExists('oauth_token_secret')) {
-				$this->session->access_token = $data->oauth_token;
-				$this->session->access_token_secret = $data->oauth_token_secret;
-
-				return TRUE;
-
-			} else {
-				return FALSE;
-			}
 		}
 
 		return FALSE;

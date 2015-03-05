@@ -35,8 +35,7 @@ class FlickrExtension extends DI\CompilerExtension
 		'appKey' => NULL,
 		'appSecret' => NULL,
 		'permission' => 'read',          // read/write/delete
-		'clearAllWithLogout' => TRUE,
-		'debugger' => '%debugMode%',
+		'clearAllWithLogout' => TRUE
 	];
 
 	public function loadConfiguration()
@@ -61,23 +60,8 @@ class FlickrExtension extends DI\CompilerExtension
 			])
 			->addSetup('$permission', [$config['permission']]);
 
-		foreach ($config['curlOptions'] as $option => $value) {
-			if (defined($option)) {
-				unset($config['curlOptions'][$option]);
-				$config['curlOptions'][constant($option)] = $value;
-			}
-		}
-
 		$builder->addDefinition($this->prefix('session'))
 			->setClass('IPub\Flickr\SessionStorage');
-
-		if ($config['debugger']) {
-			$builder->addDefinition($this->prefix('panel'))
-				->setClass('IPub\Flickr\Diagnostics\Panel');
-
-			$builder->getDefinition($builder->getByType('\IPub\OAuth\Api\CurlClient') ?:'oauth.httpClient')
-				->addSetup($this->prefix('@panel') . '::register', array('@self'));
-		}
 
 		if ($config['clearAllWithLogout']) {
 			$builder->getDefinition('user')

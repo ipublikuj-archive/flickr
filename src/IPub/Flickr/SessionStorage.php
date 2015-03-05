@@ -27,8 +27,6 @@ use Nette\Http;
  * @property string $access_token_secret
  * @property string $request_token
  * @property string $request_token_secret
- * @property string $verifier
- * @property string $token
  * @property string $user_id
  */
 class SessionStorage extends Nette\Object
@@ -45,18 +43,6 @@ class SessionStorage extends Nette\Object
 	public function __construct(Http\Session $session, Configuration $config)
 	{
 		$this->session = $session->getSection('Flickr/' . $config->appKey);
-	}
-
-	/**
-	 * Lays down a CSRF state token for this process.
-	 *
-	 * @return void
-	 */
-	public function establishCSRFTokenState()
-	{
-		if (!$this->state) {
-			$this->state = md5(uniqid(mt_rand(), TRUE));
-		}
 	}
 
 	/**
