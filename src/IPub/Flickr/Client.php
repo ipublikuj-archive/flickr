@@ -158,18 +158,12 @@ class Client extends Nette\Object
 	 * access token if a valid user access token wasn't available.  Subsequent
 	 * calls return whatever the first call returned.
 	 *
-	 * @param string $key
-	 *
-	 * @return OAuth\Token|string The access token
+	 * @return OAuth\Token The access token
 	 */
-	public function getAccessToken($key = NULL)
+	public function getAccessToken()
 	{
 		if ($this->accessToken === NULL && ($accessToken = $this->getUserAccessToken())) {
 			$this->setAccessToken($accessToken);
-		}
-
-		if ($key !== NULL) {
-			return $this->accessToken->$key ?: NULL;
 		}
 
 		return $this->accessToken;
@@ -484,7 +478,7 @@ class Client extends Nette\Object
 
 		// use access_token to fetch user id if we have a user access_token, or if
 		// the cached access token has changed
-		if (($accessToken = $this->getAccessToken('token')) && !($user && $this->session->access_token === $accessToken)) {
+		if (($accessToken = $this->getAccessToken()) && !($user && $this->session->access_token === $accessToken->getToken())) {
 			if (!$user = $this->getUserFromAccessToken()) {
 				$this->session->clearAll();
 
