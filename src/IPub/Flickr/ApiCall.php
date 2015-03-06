@@ -90,6 +90,17 @@ abstract class ApiCall extends Nette\Object
 	}
 
 	/**
+	 * Determines the access token that should be used for API calls.
+	 * The first time this is called, $this->accessToken is set equal
+	 * to either a valid user access token, or it's set to the application
+	 * access token if a valid user access token wasn't available.  Subsequent
+	 * calls return whatever the first call returned.
+	 *
+	 * @return OAuth\Token The access token
+	 */
+	abstract public function getAccessToken();
+
+	/**
 	 * @param string $path
 	 * @param array $params
 	 * @param array $headers
