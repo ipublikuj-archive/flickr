@@ -32,6 +32,8 @@ extensions:
 	flickr: IPub\Flickr\DI\FlickrExtension
 ```
 
+> NOTE: Don't forget to register [OAuth extension](http://github.com/iPublikuj/oauth), because this extension is depended on it!
+
 ## Documentation
 
 Learn how to authenticate the user using Flickr's oauth or call Flickr's api in [documentation](https://github.com/iPublikuj/flickr/blob/master/docs/en/index.md).
