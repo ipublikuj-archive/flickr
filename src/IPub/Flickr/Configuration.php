@@ -30,12 +30,12 @@ class Configuration extends Nette\Object
 	/**
 	 * @var string
 	 */
-	public $appKey;
+	public $consumerKey;
 
 	/**
 	 * @var string
 	 */
-	public $appSecret;
+	public $consumerSecret;
 
 	/**
 	 * @var string
@@ -52,13 +52,13 @@ class Configuration extends Nette\Object
 	];
 
 	/**
-	 * @param string $appKey
-	 * @param string $appSecret
+	 * @param string $consumerKey
+	 * @param string $consumerSecret
 	 */
-	public function __construct($appKey, $appSecret)
+	public function __construct($consumerKey, $consumerSecret)
 	{
-		$this->appKey = $appKey;
-		$this->appSecret = $appSecret;
+		$this->consumerKey = $consumerKey;
+		$this->consumerSecret = $consumerSecret;
 	}
 
 	/**

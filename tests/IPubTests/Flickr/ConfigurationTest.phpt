@@ -42,12 +42,12 @@ class ConfigurationTest extends Tester\TestCase
 		Assert::match('https://api.flickr.com/services/flickr.test.login', (string) $this->config->createUrl('api', 'flickr.test.login'));
 
 		Assert::match('https://www.flickr.com/services/oauth/access_token?oauth_consumer_key=123&oauth_signature_method=HMAC-SHA1', (string) $this->config->createUrl('oauth', 'access_token', array(
-			'oauth_consumer_key' => $this->config->appKey,
+			'oauth_consumer_key' => $this->config->consumerKey,
 			'oauth_signature_method' => 'HMAC-SHA1'
 		)));
 
 		Assert::match('https://www.flickr.com/services/oauth/request_token?oauth_consumer_key=123&oauth_signature_method=HMAC-SHA1', (string) $this->config->createUrl('oauth', 'request_token', array(
-			'oauth_consumer_key' => $this->config->appKey,
+			'oauth_consumer_key' => $this->config->consumerKey,
 			'oauth_signature_method' => 'HMAC-SHA1'
 		)));
 	}

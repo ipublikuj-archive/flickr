@@ -31,13 +31,13 @@ extensions:
 
 ### Basic configuration
 
-This extension creates a special section for configuration for your NEON configuration file. The absolute minimal configuration is appId and appSecret.
+This extension creates a special section for configuration for your NEON configuration file. The absolute minimal configuration is consumerKey and consumerSecret.
 
 ```neon
 flickr
-	appKey      : "123456789"
-	appSecret   : "e807f1fcf82d132f9bb018ca6738a19f"
-	permission  : "read"
+	consumerKey      : "123456789"
+	consumerSecret   : "e807f1fcf82d132f9bb018ca6738a19f"
+	permission       : "read"
 ```
 
 There are three allowed permission settings:

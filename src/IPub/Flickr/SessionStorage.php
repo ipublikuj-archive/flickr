@@ -44,7 +44,7 @@ class SessionStorage extends Nette\Object
 	 */
 	public function __construct(Http\Session $session, Configuration $config)
 	{
-		$this->session = $session->getSection('Flickr/' . $config->appKey);
+		$this->session = $session->getSection('Flickr/' . $config->consumerKey);
 	}
 
 	/**

@@ -2,5 +2,5 @@ extensions:
 	oauth: \IPub\OAuth\DI\OAuthExtension
 
 flickr:
-	appKey: "93fc0e0480a89a6140e2"
-	appSecret: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	consumerKey: "93fc0e0480a89a6140e2"
+	consumerSecret: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
