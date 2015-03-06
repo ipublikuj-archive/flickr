@@ -17,6 +17,14 @@ namespace IPub\Flickr;
 use Nette;
 use Nette\Http;
 
+/**
+ * Flickr's extension configuration storage. Store basic extension settings
+ *
+ * @package		iPublikuj:Flickr!
+ * @subpackage	common
+ *
+ * @author Adam Kadlec <adam.kadlec@fastybird.com>
+ */
 class Configuration extends Nette\Object
 {
 	/**

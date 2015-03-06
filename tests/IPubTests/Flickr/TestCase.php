@@ -80,15 +80,17 @@ class ApiClientMock extends Nette\Object implements IPub\OAuth\HttpClient
 	 */
 	public $responses = [];
 
+
 	/**
 	 * @param Api\Request $request
+	 * @param string $signatureMethodName
 	 *
 	 * @return Api\Response
 	 *
 	 * @throws Exceptions\InvalidStateException
 	 * @throws OAuth\Exceptions\ApiException
 	 */
-	public function makeRequest(Api\Request $request)
+	public function makeRequest(Api\Request $request, $signatureMethodName = 'PLAINTEXT')
 	{
 		if (empty($this->responses)) {
 			throw new Exceptions\InvalidStateException("Unexpected request");

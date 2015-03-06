@@ -64,7 +64,7 @@ class ClientTest extends TestCase
 
 		Assert::same('GET', $secondRequest->getMethod());
 		Assert::match('https://api.flickr.com/services/rest', $secondRequest->getUrl()->getHostUrl() . $secondRequest->getUrl()->getPath());
-		Assert::same(['Authorization' => $this->generateAuthenticationHeader($secondRequest->getParameters()), 'Accept' => 'application/json'], $secondRequest->getHeaders());
+		Assert::same(['Accept' => 'application/json'], $secondRequest->getHeaders());
 	}
 
 	public function testAuthorized_authorizeFromVerifierAndToken()
@@ -87,26 +87,7 @@ class ClientTest extends TestCase
 
 		Assert::same('GET', $secondRequest->getMethod());
 		Assert::match('https://api.flickr.com/services/rest', $secondRequest->getUrl()->getHostUrl() . $secondRequest->getUrl()->getPath());
-		Assert::same(['Authorization' => $this->generateAuthenticationHeader($secondRequest->getParameters()), 'Accept' => 'application/json'], $secondRequest->getHeaders());
-	}
-
-	/**
-	 * @param array $parameters
-	 *
-	 * @return string
-	 */
-	private function generateAuthenticationHeader($parameters)
-	{
-		ksort($parameters, SORT_STRING);
-		$authHeader = NULL;
-
-		foreach ($parameters as $key => $value) {
-			if (strpos($key, 'oauth_') !== FALSE) {
-				$authHeader .= ' ' . $key . '="' . $value . '",';
-			}
-		}
-
-		return 'OAuth ' . trim(rtrim($authHeader, ','));
+		Assert::same(['Accept' => 'application/json'], $secondRequest->getHeaders());
 	}
 }
 

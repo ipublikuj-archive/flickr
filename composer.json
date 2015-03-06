@@ -26,7 +26,7 @@
 		"nette/http"		: "~2.2",
 		"nette/utils"		: "~2.2",
 
-		"ipub/oauth"		: "~1.0",
+		"ipub/oauth"		: "^1.0.0",
 
 		"ext-json"	: "*"
 	},

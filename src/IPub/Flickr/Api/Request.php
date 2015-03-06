@@ -18,6 +18,8 @@ use IPub;
 use IPub\OAuth;
 
 /**
+ * Modify API call request parameters and add connection signature to the request
+ *
  * @package		iPublikuj:Flickr!
  * @subpackage	Api
  *
@@ -25,6 +27,16 @@ use IPub\OAuth;
  */
 class Request extends OAuth\Api\Request
 {
+	/**
+	 * {@inheritdoc}
+	 */
+	public function isPaginated()
+	{
+		$params = $this->getParameters();
+
+		return $this->isGet() && (isset($params['per_page']) || isset($params['page']));
+	}
+
 	/**
 	 * {@inheritdoc}
 	 */

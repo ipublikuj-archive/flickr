@@ -24,23 +24,16 @@ use IPub\Flickr\Api;
 
 use IPub\OAuth;
 
-class Client extends Nette\Object
+/**
+ * Flicker's API and OAuth client
+ *
+ * @package		iPublikuj:Flickr!
+ * @subpackage	common
+ *
+ * @author Adam Kadlec <adam.kadlec@fastybird.com>
+ */
+class Client extends ApiCall
 {
-	/**
-	 * @var OAuth\Consumer
-	 */
-	protected $consumer;
-
-	/**
-	 * @var OAuth\HttpClient
-	 */
-	private $httpClient;
-
-	/**
-	 * @var Configuration
-	 */
-	private $config;
-
 	/**
 	 * @var SessionStorage
 	 */
@@ -56,7 +49,7 @@ class Client extends Nette\Object
 	 *
 	 * @var integer
 	 */
-	protected $user;
+	private $user;
 
 	/**
 	 * The OAuth access token received in exchange for a valid authorization code
@@ -64,7 +57,7 @@ class Client extends Nette\Object
 	 *
 	 * @var OAuth\Token
 	 */
-	protected $accessToken;
+	private $accessToken;
 
 	/**
 	 * @param OAuth\Consumer $consumer
@@ -80,19 +73,12 @@ class Client extends Nette\Object
 		SessionStorage $session,
 		Nette\Http\IRequest $httpRequest
 	){
-		$this->consumer = $consumer;
-		$this->config = $config;
-		$this->session = $session;
-		$this->httpClient = $httpClient;
-		$this->httpRequest = $httpRequest;
-	}
+		parent::__construct($consumer, $httpClient, $config);
 
-	/**
-	 * @return Configuration
-	 */
-	public function getConfig()
-	{
-		return $this->config;
+		$this->session = $session;
+		$this->httpRequest = $httpRequest;
+
+		$this->consumer->setCallbackUrl($this->getCurrentUrl());
 	}
 
 	/**
@@ -109,16 +95,6 @@ class Client extends Nette\Object
 	public function getCurrentUrl()
 	{
 		return clone $this->httpRequest->getUrl();
-	}
-
-	/**
-	 * @internal
-	 *
-	 * @return OAuth\HttpClient
-	 */
-	public function getHttpClient()
-	{
-		return $this->httpClient;
 	}
 
 	/**
@@ -206,219 +182,6 @@ class Client extends Nette\Object
 	}
 
 	/**
-	 * @param string $path
-	 * @param array $params
-	 * @param array $headers
-	 *
-	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
-	 *
-	 * @throws OAuth\Exceptions\ApiException
-	 */
-	public function get($path, array $params = [], array $headers = [])
-	{
-		return $this->api($path, OAuth\Api\Request::GET, $params, [], $headers);
-	}
-
-	/**
-	 * @param string $path
-	 * @param array $params
-	 * @param array $headers
-	 *
-	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
-	 *
-	 * @throws OAuth\Exceptions\ApiException
-	 */
-	public function head($path, array $params = [], array $headers = [])
-	{
-		return $this->api($path, OAuth\Api\Request::HEAD, $params, [], $headers);
-	}
-
-	/**
-	 * @param string $path
-	 * @param array $params
-	 * @param array $post
-	 * @param array $headers
-	 *
-	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
-	 *
-	 * @throws OAuth\Exceptions\ApiException
-	 */
-	public function post($path, array $params = [], array $post = [], array $headers = [])
-	{
-		return $this->api($path, OAuth\Api\Request::POST, $params, $post, $headers);
-	}
-
-	/**
-	 * @param string $path
-	 * @param array $params
-	 * @param array $post
-	 * @param array $headers
-	 *
-	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
-	 *
-	 * @throws OAuth\Exceptions\ApiException
-	 */
-	public function patch($path, array $params = [], array $post = [], array $headers = [])
-	{
-		return $this->api($path, OAuth\Api\Request::PATCH, $params, $post, $headers);
-	}
-
-	/**
-	 * @param string $path
-	 * @param array $params
-	 * @param array $post
-	 * @param array $headers
-	 *
-	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
-	 *
-	 * @throws OAuth\Exceptions\ApiException
-	 */
-	public function put($path, array $params = [], array $post = [], array $headers = [])
-	{
-		return $this->api($path, OAuth\Api\Request::PUT, $params, $post, $headers);
-	}
-
-	/**
-	 * @param string $path
-	 * @param array $params
-	 * @param array $headers
-	 *
-	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
-	 *
-	 * @throws OAuth\Exceptions\ApiException
-	 */
-	public function delete($path, array $params = [], array $headers = [])
-	{
-		return $this->api($path, OAuth\Api\Request::DELETE, $params, [], $headers);
-	}
-
-	/**
-	 * Simply pass anything starting with a slash and it will call the Api, for example
-	 * <code>
-	 * $details = $flickr->api('flick.people.info');
-	 * </code>
-	 *
-	 * @param string $path
-	 * @param string $method The argument is optional
-	 * @param array $params Query parameters
-	 * @param array $post Post request parameters or body to send
-	 * @param array $headers Http request headers
-	 *
-	 * @return Utils\ArrayHash|string|Paginator|Utils\ArrayHash[]
-	 *
-	 * @throws OAuth\Exceptions\ApiException
-	 */
-	public function api($path, $method = OAuth\Api\Request::GET, array $params = [], array $post = [], array $headers = [])
-	{
-		if (is_array($method)) {
-			$headers = $post;
-			$post = $params;
-			$params = $method;
-			$method = OAuth\Api\Request::GET;
-		}
-
-		$params = array_merge($params, [
-			'method'            => $path,
-			'format'            => 'json',
-			'nojsoncallback'    => 1,
-		]);
-
-		$response = $this->httpClient->makeRequest(
-			new Api\Request($this->consumer, $this->config->createUrl('api', 'rest', $params), $method, $post, $headers, $this->getAccessToken()),
-			'HMAC-SHA1'
-		);
-
-		if (!$response->isJson() || (!$data = Utils\ArrayHash::from($response->toArray())) || Utils\Strings::lower($data->stat) != 'ok') {
-			$ex = $response->toException();
-			throw $ex;
-		}
-
-		if ($response->isPaginated()) {
-			return new Paginator($this, $response);
-		}
-
-		return Utils\ArrayHash::from($response->toArray());
-	}
-
-	/**
-	 * Upload photo to the Flickr
-	 *
-	 * @param string $photo
-	 * @param array $params
-	 *
-	 * @return int
-	 *
-	 * @throws Exceptions\InvalidArgumentException
-	 * @throws OAuth\Exceptions\ApiException|static
-	 */
-	public function uploadPhoto($photo, array $params = [])
-	{
-		$data = $this->processImage('upload', $photo, $params);
-
-		return (string) $data->photoid;
-	}
-
-	/**
-	 * Replace photo in Flickr
-	 *
-	 * @param string $photo
-	 * @param int $photoId
-	 * @param bool $async
-	 *
-	 * @return int
-	 *
-	 * @throws Exceptions\InvalidArgumentException
-	 * @throws OAuth\Exceptions\ApiException|static
-	 */
-	public function replacePhoto($photo, $photoId, $async = FALSE)
-	{
-		// Complete request params
-		$params = [
-			'photo_id' => $photoId,
-			'async' => $async ? 1 : 0
-		];
-
-		$data = $this->processImage('replace', $photo, $params);
-
-		return (string) $data->photoid;
-	}
-
-	/**
-	 * @param string $method
-	 * @param string $photo Path to image
-	 * @param array $params
-	 *
-	 * @return Utils\ArrayHash
-	 *
-	 * @throws Exceptions\InvalidArgumentException
-	 * @throws OAuth\Exceptions\ApiException|static
-	 */
-	private function processImage($method, $photo, array $params = [])
-	{
-		if (!file_exists($photo)) {
-			throw new Exceptions\InvalidArgumentException("File '$photo' does not exists. Please provide valid path to file.");
-		}
-
-		// Add file to post params
-		$post = [
-			'photo' => new \CURLFile($photo),
-		];
-
-		$response = $this->httpClient->makeRequest(
-			new Api\Request($this->consumer, $this->config->createUrl('upload', $method, $params), OAuth\Api\Request::POST, $post, [], $this->getAccessToken()),
-			'HMAC-SHA1'
-		);
-
-		if ($response->isOk() && $response->isXml() && ($data = Utils\ArrayHash::from($response->toArray())) && $data->{'@attributes'}->stat == 'ok') {
-			return $data;
-
-		} else {
-			$ex = $response->toException();
-			throw $ex;
-		}
-	}
-
-	/**
 	 * Get the UID of the connected user, or 0 if the Flickr user is not connected.
 	 *
 	 * @return string the UID if available.
@@ -494,18 +257,18 @@ class Client extends Nette\Object
 	/**
 	 * Get a request token from Flickr
 	 *
-	 * @param string $callback
+	 * @param string|null $callback
 	 *
 	 * @return bool
 	 */
-	public function obtainRequestToken($callback)
+	public function obtainRequestToken($callback = NULL)
 	{
 		// Before first handshake, session have to cleared
 		$this->session->clearAll();
 
 		// Complete request params
 		$params = [
-			'oauth_callback' => $callback,
+			'oauth_callback' => $callback ?:$this->consumer->getCallbackUrl(),
 		];
 
 		$response = $this->httpClient->makeRequest(

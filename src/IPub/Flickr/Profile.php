@@ -20,6 +20,14 @@ use Nette\Utils;
 use IPub;
 use IPub\Flickr\Exceptions;
 
+/**
+ * Flickr's user profile
+ *
+ * @package		iPublikuj:Flickr!
+ * @subpackage	common
+ *
+ * @author Adam Kadlec <adam.kadlec@fastybird.com>
+ */
 class Profile extends Nette\Object
 {
 	/**

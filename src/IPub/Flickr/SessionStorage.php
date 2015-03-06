@@ -23,6 +23,8 @@ use Nette\Http;
  * @package		iPublikuj:Flickr!
  * @subpackage	common
  *
+ * @author Adam Kadlec <adam.kadlec@fastybird.com>
+ *
  * @property string $access_token
  * @property string $access_token_secret
  * @property string $request_token

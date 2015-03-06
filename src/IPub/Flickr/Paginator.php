@@ -19,6 +19,12 @@ use Nette;
 use IPub;
 
 /**
+ * Response paginator
+ *
+ * @package		iPublikuj:Flickr!
+ * @subpackage	common
+ *
+ * @author Adam Kadlec <adam.kadlec@fastybird.com>
  * @author Filip Procházka <filip@prochazka.su>
  */
 class Paginator extends Nette\Object implements \Iterator
@@ -26,7 +32,7 @@ class Paginator extends Nette\Object implements \Iterator
 	const PER_PAGE_MAX = 100;
 
 	/**
-	 * @var Client
+	 * @var ApiCall
 	 */
 	private $client;
 
@@ -71,15 +77,16 @@ class Paginator extends Nette\Object implements \Iterator
 	private $pageCursor;
 
 	/**
-	 * @param Client $client
+	 * @param ApiCall $client
 	 * @param IPub\OAuth\Api\Response $response
 	 */
-	public function __construct(Client $client, IPub\OAuth\Api\Response $response)
+	public function __construct(ApiCall $client, IPub\OAuth\Api\Response $response)
 	{
 		$this->client = $client;
 
 		$this->httpClient = $client->getHttpClient();
 		$resource = $response->toArray();
+		$resource = $this->findCollection(current($resource));
 
 		$params = $response->request->getParameters();
 		$this->firstPage = isset($params['page']) ? (int) max($params['page'], 1) : 1;
@@ -164,13 +171,17 @@ class Paginator extends Nette\Object implements \Iterator
 			$params['page'] = isset($params['page']) ? (int) max($params['page'], 1) + 1 : 1;
 
 			$response = $this->httpClient->makeRequest(
-				$prevRequest->copyWithUrl($this->client->getConfig()->createUrl('api', 'rest', $params))
+				$prevRequest->copyWithUrl($this->client->getConfig()->createUrl('api', 'rest', $params)),
+				'HMAC-SHA1'
 			);
+
+			$resource = $response->toArray();
+			$resource = $this->findCollection(current($resource));
 
 			$this->itemCursor = 0;
 			$this->pageCursor++;
 			$this->responses[$this->pageCursor] = $response;
-			$this->resources[$this->pageCursor] = $response->toArray();
+			$this->resources[$this->pageCursor] = $resource;
 
 		} catch (\Exception $e) {
 			$this->itemCursor--; // revert back so the user can continue if needed
@@ -180,5 +191,19 @@ class Paginator extends Nette\Object implements \Iterator
 	public function key()
 	{
 		return $this->itemCursor + ($this->pageCursor - 1) * $this->perPage;
+	}
+
+	/**
+	 * @param array $response
+	 *
+	 * @return array
+	 */
+	private function findCollection(array $response)
+	{
+		foreach($response as $item) {
+			if (is_array($item)) {
+				return $item;
+			}
+		}
 	}
 }

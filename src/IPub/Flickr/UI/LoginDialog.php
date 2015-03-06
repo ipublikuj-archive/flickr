@@ -56,11 +56,6 @@ class LoginDialog extends Application\UI\Control
 	protected $session;
 
 	/**
-	 * @var Http\UrlScript
-	 */
-	protected $currentUrl;
-
-	/**
 	 * @param Flickr\Client $flickr
 	 */
 	public function __construct(Flickr\Client $flickr)
@@ -68,7 +63,6 @@ class LoginDialog extends Application\UI\Control
 		$this->client = $flickr;
 		$this->config = $flickr->getConfig();
 		$this->session = $flickr->getSession();
-		$this->currentUrl = $flickr->getCurrentUrl();
 
 		parent::__construct();
 
@@ -91,7 +85,7 @@ class LoginDialog extends Application\UI\Control
 		parent::attached($obj);
 
 		if ($obj instanceof Nette\Application\IPresenter) {
-			$this->currentUrl = new Http\UrlScript($this->link('//response!'));
+			$this->client->getConsumer()->setCallbackUrl(new Http\UrlScript($this->link('//response!')));
 		}
 	}
 
@@ -123,7 +117,7 @@ class LoginDialog extends Application\UI\Control
 	 */
 	public function open()
 	{
-		if ($this->client->obtainRequestToken((string) $this->currentUrl)) {
+		if ($this->client->obtainRequestToken()) {
 			$this->presenter->redirectUrl($this->getUrl());
 
 		} else {
