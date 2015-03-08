@@ -299,8 +299,10 @@ abstract class ApiCall extends Nette\Object
 			'photo' => new \CURLFile($photo),
 		];
 
+		$post = array_merge($post, $params);
+
 		$response = $this->httpClient->makeRequest(
-			new Api\Request($this->consumer, $this->config->createUrl('upload', $method, $params), Api\Request::POST, $post, [], $this->getAccessToken()),
+			new Api\Request($this->consumer, $this->config->createUrl('upload', $method), Api\Request::POST, $post, [], $this->getAccessToken()),
 			'HMAC-SHA1'
 		);
 
