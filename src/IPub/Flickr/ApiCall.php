@@ -285,13 +285,13 @@ abstract class ApiCall extends Nette\Object
 	 *
 	 * @return Utils\ArrayHash
 	 *
-	 * @throws Exceptions\InvalidArgumentException
+	 * @throws Exceptions\FileNotFoundException
 	 * @throws OAuth\Exceptions\ApiException|static
 	 */
 	private function processImage($method, $photo, array $params = [])
 	{
 		if (!file_exists($photo)) {
-			throw new Exceptions\InvalidArgumentException("File '$photo' does not exists. Please provide valid path to file.");
+			throw new Exceptions\FileNotFoundException("File '$photo' does not exists. Please provide valid path to file.");
 		}
 
 		// Add file to post params
