@@ -2,13 +2,14 @@
 	"name"			: "ipub/flickr",
 	"type"			: "library",
 	"description"	: "Flickr API client with authorization for Nette Framework",
-	"keywords"		: ["nette", "ipub", "ipublikuj", "flickr", "authorization"],
-	"homepage"		: "https://github.com/iPublikuj/flickr.git",
+	"keywords"		: ["nette", "ipub", "ipublikuj", "flickr", "authorization", "oauth"],
+	"homepage"		: "https://github.com/iPublikuj/flickr",
 	"license"		: ["BSD-3-Clause", "GPL-2.0", "GPL-3.0"],
 
-	"authors"		: [
+	"authors": [
 		{
-			"name"		: "Adam Kadlec",
+			"name"		: "iPublikuj:cms",
+			"email"		: "info@ipublikuj.eu",
 			"homepage"	: "http://www.ipublikuj.eu/"
 		}
 	],
