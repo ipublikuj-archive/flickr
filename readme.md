@@ -11,18 +11,8 @@ Flickr API client with authorization for [Nette Framework](http://nette.org/)
 
 The best way to install ipub/flickr is using  [Composer](http://getcomposer.org/):
 
-```json
-{
-	"require": {
-		"ipub/flickr": "dev-master"
-	}
-}
-```
-
-or
-
 ```sh
-$ composer require ipub/flickr:@dev
+$ composer require ipub/flickr
 ```
 
 After that you have to register extension in config.neon.
