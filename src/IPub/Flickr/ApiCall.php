@@ -290,7 +290,7 @@ abstract class ApiCall extends Nette\Object
 	 */
 	private function processImage($method, $photo, array $params = [])
 	{
-		if (!file_exists($photo)) {
+		if (!is_file($photo)) {
 			throw new Exceptions\FileNotFoundException("File '$photo' does not exists. Please provide valid path to file.");
 		}
 
